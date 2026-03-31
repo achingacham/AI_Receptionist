@@ -4,23 +4,40 @@ An AI-powered receptionist chatbot built with FastAPI and Groq.
 
 ## Setup
 
-1. **Install dependencies**
+1. **Create a virtual environment**
+   ```bash
+   python -m venv venv
+   ```
+
+2. **Activate the virtual environment**
+   ```bash
+   # Windows (bash/Git Bash)
+   source venv/Scripts/activate
+
+   # Windows (cmd)
+   venv\Scripts\activate.bat
+
+   # macOS/Linux
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure environment**
+4. **Configure environment**
    ```bash
    cp .env.example .env
    # Edit .env and set your GROQ_API_KEY and business details
    ```
 
-3. **Run the server**
+5. **Run the server**
    ```bash
    uvicorn backend.app.main:app --reload
    ```
 
-4. Open http://localhost:8000 in your browser.
+6. Open http://localhost:8000 in your browser.
 
 ## Project Structure
 
