@@ -12,6 +12,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
+    scenario: str = "general"
 
 
 class ChatResponse(BaseModel):
@@ -26,7 +27,7 @@ async def chat_endpoint(request: ChatRequest):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     try:
-        reply = chat(messages)
+        reply = chat(messages, scenario=request.scenario)
         return ChatResponse(reply=reply)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
