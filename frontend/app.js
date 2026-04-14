@@ -1,4 +1,4 @@
-const API_URL = "/api/chat";
+const API_URL = "/api/appointment";
 const chatWindow = document.getElementById("chat-window");
 const userInput = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");

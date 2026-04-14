@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(touch c:/PythonProjects/ai-receptionist/backend/app/appointment_handler.py)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/appointment -H 'Content-Type: application/json' -d '{\"messages\": [{\"role\": \"user\", \"content\": \"Hearing test tomorrow at 11am. Rahul Sharma, rahul.sharma@gmail.com\"}]}')",
+      "Bash(python -m json.tool)"
+    ]
+  }
+}

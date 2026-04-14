@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     business_address: str = ""
     receptionist_name: str = "Alex"
 
+    # Cal.com
+    calcom_api_key: str = ""
+    calcom_username: str = ""
+    calcom_event_type_id: int = 0
+    calcom_timezone: str = "Asia/Kolkata"
+    calcom_fallback_email: str = ""
+
     class Config:
         env_file = ".env"
 
