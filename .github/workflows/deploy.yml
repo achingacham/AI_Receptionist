@@ -1,0 +1,102 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: aireceptionistacrakj6vzhpetfnq.azurecr.io
+  IMAGE_NAME: ai-receptionist
+  RESOURCE_GROUP: ai-receptionist-prod-rg
+  CONTAINER_APP_NAME: aireceptionistprodakj6vz-app
+  KEYVAULT_NAME: aireceptionistprodak-kv
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.AZURE_CLIENT_ID }}
+          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Configure Key Vault secrets
+        run: |
+          az keyvault secret set --vault-name $KEYVAULT_NAME --name GROQ-API-KEY         --value "${{ secrets.GROQ_API_KEY }}"         --output none
+          az keyvault secret set --vault-name $KEYVAULT_NAME --name SARVAM-API-KEY       --value "${{ secrets.SARVAM_API_KEY }}"       --output none
+          az keyvault secret set --vault-name $KEYVAULT_NAME --name TWILIO-ACCOUNT-SID   --value "${{ secrets.TWILIO_ACCOUNT_SID }}"   --output none
+          az keyvault secret set --vault-name $KEYVAULT_NAME --name TWILIO-AUTH-TOKEN    --value "${{ secrets.TWILIO_AUTH_TOKEN }}"    --output none
+          az keyvault secret set --vault-name $KEYVAULT_NAME --name CALCOM-API-KEY       --value "${{ secrets.CALCOM_API_KEY }}"       --output none
+
+      - name: Update Container App
+        run: |
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+            --set-env-vars \
+              GROQ_MODEL="${{ secrets.GROQ_MODEL }}" \
+              GROQ_API_URL="${{ secrets.GROQ_API_URL }}" \
+              BUSINESS_NAME="${{ secrets.BUSINESS_NAME }}" \
+              BUSINESS_HOURS="${{ secrets.BUSINESS_HOURS }}" \
+              BUSINESS_PHONE="${{ secrets.BUSINESS_PHONE }}" \
+              BUSINESS_EMAIL="${{ secrets.BUSINESS_EMAIL }}" \
+              BUSINESS_ADDRESS="${{ secrets.BUSINESS_ADDRESS }}" \
+              RECEPTIONIST_NAME="${{ secrets.RECEPTIONIST_NAME }}" \
+              CALCOM_USERNAME="${{ secrets.CALCOM_USERNAME }}" \
+              CALCOM_EVENT_TYPE_ID="${{ secrets.CALCOM_EVENT_TYPE_ID }}" \
+              CALCOM_TIMEZONE="${{ secrets.CALCOM_TIMEZONE }}" \
+              VOICE_PROVIDER="${{ secrets.VOICE_PROVIDER }}" \
+              TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER }}" \
+              KEYVAULT_URI="https://$KEYVAULT_NAME.vault.azure.net/" \
+            --output none
+
+      - name: Wait for revision to stabilize
+        run: sleep 30
+
+      - name: Get app URL and health check
+        run: |
+          FQDN=$(az containerapp show \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
+          echo "App URL: https://$FQDN"
+          echo "APP_URL=https://$FQDN" >> $GITHUB_ENV
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$FQDN/health" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed (HTTP 200)"
+              break
+            fi
+            echo "Attempt $i/10: HTTP $STATUS — retrying in 15s"
+            sleep 15
+          done
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployment complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **App URL:** $APP_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`$REGISTRY/$IMAGE_NAME:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource group:** \`$RESOURCE_GROUP\`" >> $GITHUB_STEP_SUMMARY

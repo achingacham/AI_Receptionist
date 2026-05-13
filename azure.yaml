@@ -1,0 +1,29 @@
+name: ai-receptionist
+metadata:
+  template: bicep@1.0.0
+  description: Bicep template configuration for AI Receptionist FastAPI app
+services:
+  api:
+    project: ./backend
+    language: python
+    host: containerAppEnv
+    build:
+      docker:
+        path: ./Dockerfile
+    environment_variables:
+      - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+        secretRef: APPINSIGHTS_KEY
+      - name: KEYVAULT_URI
+        value: ${AZURE_KEYVAULT_ENDPOINT}
+      - name: DATABASE_URL
+        secretRef: DATABASE_URL
+
+infra:
+  template: ./infra/main.bicep
+  parameters: ./infra/main.bicepparam
+
+env:
+  - name: AZURE_LOCATION
+    default: centralindia
+  - name: RESOURCE_NAME_PREFIX
+    default: aireceptionist
