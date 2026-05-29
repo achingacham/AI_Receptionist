@@ -31,7 +31,7 @@ ENV_FILE = PROJECT_ROOT / ".env"
 BICEP_MAIN = PROJECT_ROOT / "infra" / "main.bicep"
 BICEP_PARAMS = PROJECT_ROOT / "infra" / "main.bicepparam"
 
-SUBSCRIPTION_ID = "f658d420-86b4-4c53-aa84-ef2df0762520"
+SUBSCRIPTION_ID = "7fe7cb77-5aaf-4887-8a6c-91698815e2a6"
 RESOURCE_GROUP = "ai-receptionist-rg"
 LOCATION = "centralindia"
 DEPLOYMENT_NAME = "aireceptionist-deployment"
@@ -43,6 +43,8 @@ KEYVAULT_SECRETS_MAP = {
     "SARVAM_API_KEY": "SARVAM-API-KEY",
     "TWILIO_ACCOUNT_SID": "TWILIO-ACCOUNT-SID",
     "TWILIO_AUTH_TOKEN": "TWILIO-AUTH-TOKEN",
+    "EXOTEL_SID": "EXOTEL-SID",
+    "EXOTEL_TOKEN": "EXOTEL-TOKEN",
     "CALCOM_API_KEY": "CALCOM-API-KEY",
 }
 
@@ -63,6 +65,8 @@ CONTAINER_ENV_KEYS = [
     "VOICE_PROVIDER",
     "TWILIO_PHONE_NUMBER",
     "PLIVO_PHONE_NUMBER",
+    "EXOTEL_PHONE_NUMBER",
+    "EXOTEL_SUBDOMAIN",
 ]
 
 
@@ -91,13 +95,15 @@ def run(args: list[str], *, check: bool = True, capture: bool = True) -> subproc
     """Run a command, print it, and exit on failure when check=True."""
     display = " ".join(str(a) for a in args)
     print(f"    $ {display}")
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     # On Windows, az/acr/containerapp are .cmd files that require shell=True.
     # subprocess.list2cmdline quotes args safely for cmd.exe.
     if sys.platform == "win32":
         cmd = subprocess.list2cmdline(args)
-        result = subprocess.run(cmd, capture_output=capture, text=True, shell=True)
+        result = subprocess.run(cmd, capture_output=capture, text=True, shell=True, env=env)
     else:
-        result = subprocess.run(args, capture_output=capture, text=True)
+        result = subprocess.run(args, capture_output=capture, text=True, env=env)
     if check and result.returncode != 0:
         print(f"\n[ERROR] Command exited {result.returncode}")
         if result.stdout:
@@ -233,24 +239,49 @@ def _infer_container_app_name() -> str:
 
 
 def build_and_push_image(registry_login_server: str) -> str:
-    """Build the Docker image in ACR (cloud build) and push it. Returns the full image tag."""
+    """Queue an ACR cloud build, poll until done, return the full image tag."""
     header("ACR Cloud Build & Push")
 
     acr_name = registry_login_server.split(".")[0]
     image_tag = f"{registry_login_server}/{IMAGE_NAME}:latest"
 
-    print(f"  Building image in ACR '{acr_name}' (no local Docker needed) ...")
-    print(f"  Uploading build context from {PROJECT_ROOT} — this takes a few minutes ...")
-    run([
+    print(f"  Queuing build in ACR '{acr_name}' (uploading ~280 MB context) ...")
+    # --no-wait avoids streaming logs back through Windows console (cp1252 crash).
+    result = run([
         "az", "acr", "build",
         "--registry", acr_name,
         "--image", f"{IMAGE_NAME}:latest",
         "--file", str(PROJECT_ROOT / "Dockerfile"),
+        "--no-wait",
         str(PROJECT_ROOT),
-    ], capture=False)
-    ok(f"Image built and pushed → {image_tag}")
+    ])
+    ok("Build queued in Azure")
 
-    return image_tag
+    # Poll the latest run until it succeeds or fails (max 30 min).
+    print("  Polling build status ...")
+    for attempt in range(60):
+        time.sleep(30)
+        r = run([
+            "az", "acr", "task", "list-runs",
+            "--registry", acr_name,
+            "--top", "1",
+            "--query", "[0].{status:status,runId:runId}",
+            "--output", "json",
+        ], check=False)
+        if r.returncode != 0 or not r.stdout.strip():
+            print(f"    [{attempt+1}/60] Could not query run status, retrying ...")
+            continue
+        info = json.loads(r.stdout)
+        status = info.get("status", "Unknown")
+        run_id = info.get("runId", "?")
+        print(f"    [{attempt+1}/60] Run {run_id}: {status}")
+        if status == "Succeeded":
+            ok(f"Image built and pushed -> {image_tag}")
+            return image_tag
+        if status in ("Failed", "Canceled", "Error"):
+            fail(f"ACR build {run_id} failed with status: {status}")
+
+    fail("ACR build timed out after 30 minutes")
 
 
 def configure_keyvault_secrets(keyvault_name: str) -> None:
@@ -287,10 +318,36 @@ def configure_keyvault_secrets(keyvault_name: str) -> None:
 
 
 def update_container_app(container_app_name: str, image_tag: str, infra: dict[str, str]) -> None:
-    """Update the Container App with the new image and non-sensitive env vars."""
+    """Update the Container App with the new image, env vars, and Key Vault secret refs."""
     header("Container App Update")
 
     env = parse_env(ENV_FILE)
+
+    # Wire Key Vault secrets as Container App secret references (idempotent).
+    identity_id = (
+        f"/subscriptions/{SUBSCRIPTION_ID}/resourcegroups/{RESOURCE_GROUP}"
+        f"/providers/Microsoft.ManagedIdentity/userAssignedIdentities"
+        f"/{container_app_name.replace('-app', '-identity')}"
+    )
+    kv_base = infra["keyvault_uri"].rstrip("/") + "/secrets"
+    kv_secrets = [
+        f"groq-api-key=keyvaultref:{kv_base}/GROQ-API-KEY,identityref:{identity_id}",
+        f"sarvam-api-key=keyvaultref:{kv_base}/SARVAM-API-KEY,identityref:{identity_id}",
+        f"twilio-account-sid=keyvaultref:{kv_base}/TWILIO-ACCOUNT-SID,identityref:{identity_id}",
+        f"twilio-auth-token=keyvaultref:{kv_base}/TWILIO-AUTH-TOKEN,identityref:{identity_id}",
+        f"exotel-sid=keyvaultref:{kv_base}/EXOTEL-SID,identityref:{identity_id}",
+        f"exotel-token=keyvaultref:{kv_base}/EXOTEL-TOKEN,identityref:{identity_id}",
+        f"calcom-api-key=keyvaultref:{kv_base}/CALCOM-API-KEY,identityref:{identity_id}",
+    ]
+    print(f"  Wiring Key Vault secrets into '{container_app_name}' ...")
+    run([
+        "az", "containerapp", "secret", "set",
+        "--name", container_app_name,
+        "--resource-group", RESOURCE_GROUP,
+        "--secrets", *kv_secrets,
+        "--output", "none",
+    ])
+    ok("Key Vault secret references set")
 
     env_vars: list[str] = []
     for key in CONTAINER_ENV_KEYS:
@@ -299,6 +356,16 @@ def update_container_app(container_app_name: str, image_tag: str, infra: dict[st
             env_vars.append(f"{key}={value}")
 
     env_vars.append(f"KEYVAULT_URI={infra['keyvault_uri']}")
+    # Expose KV-backed secrets as env vars via secretRef.
+    env_vars += [
+        "GROQ_API_KEY=secretref:groq-api-key",
+        "SARVAM_API_KEY=secretref:sarvam-api-key",
+        "TWILIO_ACCOUNT_SID=secretref:twilio-account-sid",
+        "TWILIO_AUTH_TOKEN=secretref:twilio-auth-token",
+        "EXOTEL_SID=secretref:exotel-sid",
+        "EXOTEL_TOKEN=secretref:exotel-token",
+        "CALCOM_API_KEY=secretref:calcom-api-key",
+    ]
 
     print(f"  Updating '{container_app_name}' with new image ...")
     cmd = [
@@ -371,9 +438,11 @@ def main() -> None:
     if args.skip_infra:
         if not (args.registry and args.keyvault and args.app_name):
             fail("--skip-infra requires --registry, --keyvault, and --app-name")
+        registry_name = args.registry.split(".")[0]
+        registry_login_server = args.registry if ".azurecr.io" in args.registry else f"{registry_name}.azurecr.io"
         infra = {
-            "registry_name": args.registry.split(".")[0],
-            "registry_login_server": args.registry,
+            "registry_name": registry_name,
+            "registry_login_server": registry_login_server,
             "keyvault_name": args.keyvault,
             "keyvault_uri": f"https://{args.keyvault}.vault.azure.net/",
             "container_app_name": args.app_name,

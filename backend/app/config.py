@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     calcom_timezone: str = "Asia/Kolkata"
     calcom_fallback_email: str = ""
 
+    # Voice (Sarvam AI + Plivo/Twilio/Exotel)
+    sarvam_api_key: str = ""
+    voice_provider: str = "plivo"   # "plivo", "twilio", or "exotel"
+    plivo_auth_id: str = ""
+    plivo_auth_token: str = ""
+    plivo_phone_number: str = ""
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_phone_number: str = ""
+    exotel_sid: str = ""
+    exotel_token: str = ""
+    exotel_subdomain: str = ""
+    exotel_phone_number: str = ""
+
     class Config:
         env_file = ".env"
 

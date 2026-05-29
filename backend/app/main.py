@@ -6,6 +6,10 @@ import os
 
 from .routes.chat import router as chat_router
 from .routes.appointment import router as appointment_router
+from .routes.voice import router as voice_router
+from .routes.voice_twilio import router as twilio_router
+from .routes.voice_exotel import router as exotel_router
+from .routes.sarvam_test import router as sarvam_test_router
 from .config import settings
 
 app = FastAPI(title="AI Receptionist", version="1.0.0")
@@ -19,6 +23,10 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(appointment_router)
+app.include_router(voice_router)
+app.include_router(twilio_router)
+app.include_router(exotel_router)
+app.include_router(sarvam_test_router)
 
 # Serve frontend static files
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
