@@ -184,3 +184,54 @@ textarea:focus {
   background: #9ca3af;
   cursor: not-allowed;
 }
+
+#call-btn {
+  width: 40px;
+  height: 40px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  margin-left: 6px;
+}
+
+#call-btn:hover { background: #15803d; }
+#call-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+#call-btn.active-call { background: #dc2626; }
+#call-btn.active-call:hover { background: #b91c1c; }
+
+#call-overlay {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 100;
+}
+
+#call-status-text { font-size: 14px; }
+
+#call-overlay button {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#call-overlay button:hover { background: #b91c1c; }

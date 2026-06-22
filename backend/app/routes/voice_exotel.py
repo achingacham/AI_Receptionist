@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import Response
 
 from ..config import settings
-from ..voice.twilio_bot import run_twilio_bot
+from ..voice.exotel_bot import run_exotel_bot
 
 router = APIRouter(prefix="/exotel", tags=["exotel"])
 
@@ -42,4 +42,4 @@ async def exotel_stream(websocket: WebSocket):
         )
     except Exception:
         stream_sid = "unknown"
-    await run_twilio_bot(websocket, stream_sid)
+    await run_exotel_bot(websocket, stream_sid)

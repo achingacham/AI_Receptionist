@@ -5,7 +5,7 @@ param keyVaultId string
 
 // Role IDs (built-in Azure roles)
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets User
-var acrPullRoleId = '7f951fd6-2794-4f7b-a4de-a3c9cc588eb4' // AcrPull role for pulling images from container registry
+var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull built-in role
 
 // Key Vault Secrets User role assignment
 resource keyVaultSecretsUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {

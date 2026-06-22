@@ -121,15 +121,16 @@ module containerAppEnv 'modules/container-app-env.bicep' = {
   }
 }
 
-// Deploy Container App
+// Deploy Container App (uses public placeholder until real image is pushed via CI/CD)
 module containerApp 'modules/container-app.bicep' = {
   name: 'containerApp'
+  dependsOn: [roleAssignments]
   params: {
     location: location
     containerAppName: containerAppName
     containerAppEnvId: containerAppEnv.outputs.containerAppEnvId
     containerRegistryLoginServer: containerRegistry.outputs.loginServer
-    containerImage: '${containerRegistry.outputs.loginServer}/ai-receptionist:latest'
+    containerImage: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
     containerPort: 8000
     minReplicas: containerAppMinReplicas
     maxReplicas: containerAppMaxReplicas

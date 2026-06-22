@@ -33,8 +33,10 @@ class Settings(BaseSettings):
     exotel_subdomain: str = ""
     exotel_phone_number: str = ""
 
-    class Config:
-        env_file = ".env"
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()

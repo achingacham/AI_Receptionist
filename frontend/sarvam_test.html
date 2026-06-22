@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sarvam Voice Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px 16px; }
+    .card { background: white; border-radius: 12px; padding: 32px; max-width: 520px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    h1 { font-size: 1.25rem; margin-bottom: 4px; }
+    .sub { color: #666; font-size: 0.875rem; margin-bottom: 28px; }
+    #record-btn {
+      width: 100%; padding: 16px; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: 8px; cursor: pointer;
+      background: #2563eb; color: white; transition: background .15s;
+      user-select: none; -webkit-user-select: none;
+    }
+    #record-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    #record-btn.recording { background: #dc2626; }
+    #status { margin-top: 12px; font-size: 0.875rem; color: #555; min-height: 20px; text-align: center; }
+    .result-box { margin-top: 20px; padding: 14px; border-radius: 8px; background: #f8f9fa; }
+    .label { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .value { font-size: 0.95rem; color: #111; }
+    #audio-player { display: none; width: 100%; margin-top: 20px; }
+    .error { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Sarvam Voice Test</h1>
+  <p class="sub">Hold the button while speaking, release to get a response.</p>
+
+  <button id="record-btn">Hold to Record</button>
+  <div id="status">Click and hold the button to start recording.</div>
+
+  <div id="transcript-box" class="result-box" style="display:none">
+    <div class="label">You said</div>
+    <div id="transcript-text" class="value"></div>
+  </div>
+
+  <div id="reply-box" class="result-box" style="display:none; margin-top:10px">
+    <div class="label">Kiran replied</div>
+    <div id="reply-text" class="value"></div>
+  </div>
+
+  <audio id="audio-player" controls></audio>
+</div>
+
+<script>
+const btn = document.getElementById('record-btn');
+const status = document.getElementById('status');
+const audioPlayer = document.getElementById('audio-player');
+
+let audioCtx = null;
+let mediaStream = null;
+let scriptProcessor = null;
+let samples = [];
+let recording = false;
+
+// ── WAV helpers ──────────────────────────────────────────────────────────────
+
+function encodeWav(float32Samples, sampleRate) {
+  const numSamples = float32Samples.length;
+  const buf = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buf);
+
+  function writeStr(offset, str) {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);   // chunk size
+  view.setUint16(20, 1, true);    // PCM
+  view.setUint16(22, 1, true);    // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);    // block align
+  view.setUint16(34, 16, true);   // bits per sample
+  writeStr(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, float32Samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+// ── Recording ────────────────────────────────────────────────────────────────
+
+async function startRecording() {
+  if (recording) return;
+  samples = [];
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    setStatus('Microphone access denied. Please allow microphone in browser settings.', true);
+    return;
+  }
+
+  const targetRate = 16000;
+  audioCtx = new AudioContext({ sampleRate: targetRate });
+  const source = audioCtx.createMediaStreamSource(mediaStream);
+  scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+  scriptProcessor.onaudioprocess = (e) => {
+    if (recording) {
+      const data = e.inputBuffer.getChannelData(0);
+      samples.push(new Float32Array(data));
+    }
+  };
+
+  source.connect(scriptProcessor);
+  scriptProcessor.connect(audioCtx.destination);
+
+  recording = true;
+  btn.classList.add('recording');
+  btn.textContent = 'Recording… Release to send';
+  setStatus('Listening…');
+}
+
+function stopRecording() {
+  if (!recording) return;
+  recording = false;
+
+  if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+
+  btn.classList.remove('recording');
+  btn.textContent = 'Hold to Record';
+
+  if (samples.length === 0) {
+    setStatus('No audio captured. Try again.');
+    return;
+  }
+
+  // Flatten all chunks into one array
+  const totalLen = samples.reduce((n, s) => n + s.length, 0);
+  const pcm = new Float32Array(totalLen);
+  let offset = 0;
+  for (const chunk of samples) { pcm.set(chunk, offset); offset += chunk.length; }
+
+  const wav = encodeWav(pcm, 16000);
+  sendAudio(wav);
+}
+
+// ── API call ─────────────────────────────────────────────────────────────────
+
+async function sendAudio(wavBlob) {
+  setStatus('Transcribing…');
+  btn.disabled = true;
+  hide('transcript-box');
+  hide('reply-box');
+  audioPlayer.style.display = 'none';
+
+  const form = new FormData();
+  form.append('audio', wavBlob, 'audio.wav');
+
+  try {
+    const res = await fetch('/sarvam/voice-chat', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus('Error: ' + (data.detail || res.statusText), true);
+      return;
+    }
+
+    document.getElementById('transcript-text').textContent = data.transcript;
+    show('transcript-box');
+
+    document.getElementById('reply-text').textContent = data.reply;
+    show('reply-box');
+
+    // Decode base64 WAV and play
+    const wavBytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0));
+    const blob = new Blob([wavBytes], { type: 'audio/wav' });
+    audioPlayer.src = URL.createObjectURL(blob);
+    audioPlayer.style.display = 'block';
+    audioPlayer.play().catch(() => {});  // autoplay may require user gesture
+
+    setStatus('Done. Hold button to ask another question.');
+  } catch (e) {
+    setStatus('Network error: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Button events ─────────────────────────────────────────────────────────────
+
+btn.addEventListener('mousedown', (e) => { e.preventDefault(); startRecording(); });
+btn.addEventListener('mouseup', stopRecording);
+btn.addEventListener('mouseleave', stopRecording);
+
+btn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); }, { passive: false });
+btn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); }, { passive: false });
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function setStatus(msg, isError = false) {
+  status.textContent = msg;
+  status.style.color = isError ? '#dc2626' : '#555';
+}
+
+function show(id) { document.getElementById(id).style.display = 'block'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+</body>
+</html>
