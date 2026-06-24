@@ -1,6 +1,7 @@
 """Shared Pipecat pipeline: Sarvam STT → Groq LLM → Sarvam TTS.
 
-Transport-agnostic. Plivo and Twilio bots both call build_pipeline().
+Transport-agnostic. Telephony bots (Plivo/Twilio/Exotel) use 8kHz mu-law;
+browser (Daily.co) uses 16kHz PCM — pass sample_rate and input_audio_codec accordingly.
 """
 
 from pipecat.pipeline.pipeline import Pipeline
@@ -18,20 +19,26 @@ from ..config import settings
 from ..receptionist import build_system_prompt
 
 
-def build_pipeline(transport) -> tuple[PipelineTask, LLMContext]:
-    """Build and return a PipelineTask + context for a telephony transport.
+def build_pipeline(
+    transport,
+    sample_rate: int = 8000,
+    input_audio_codec: str = "mulaw",
+) -> tuple[PipelineTask, LLMContext]:
+    """Build and return a PipelineTask + context for any Pipecat transport.
 
     Args:
-        transport: A Pipecat transport (Plivo or Twilio FastAPI WebSocket transport).
+        transport: A Pipecat transport (Plivo, Twilio, Exotel, or Daily).
+        sample_rate: Audio sample rate in Hz. 8000 for telephony, 16000 for browser (Daily.co).
+        input_audio_codec: Codec for STT input. "mulaw" for telephony, "pcm" for Daily.co.
 
     Returns:
         (task, context) — run task with PipelineRunner; context holds message history.
     """
     stt = SarvamSTTService(
         api_key=settings.sarvam_api_key,
-        model="saaras:v2",       # transcribes + translates Indian languages → English
-        sample_rate=8000,
-        input_audio_codec="mulaw",
+        model="saaras:v2",
+        sample_rate=sample_rate,
+        input_audio_codec=input_audio_codec,
     )
 
     llm = OpenAILLMService(
@@ -42,7 +49,7 @@ def build_pipeline(transport) -> tuple[PipelineTask, LLMContext]:
 
     tts = SarvamTTSService(
         api_key=settings.sarvam_api_key,
-        sample_rate=8000,
+        sample_rate=sample_rate,
     )
 
     system_prompt = build_system_prompt("appointment")

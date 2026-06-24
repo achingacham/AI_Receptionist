@@ -12,6 +12,8 @@ from .routes.voice_exotel import router as exotel_router
 from .routes.sarvam_test import router as sarvam_test_router
 from .config import settings
 
+from .routes.voice_daily import router as daily_voice_router
+
 app = FastAPI(title="AI Receptionist", version="1.0.0")
 
 app.add_middleware(
@@ -27,6 +29,8 @@ app.include_router(voice_router)
 app.include_router(twilio_router)
 app.include_router(exotel_router)
 app.include_router(sarvam_test_router)
+app.include_router(daily_voice_router)
+
 
 # Serve frontend static files
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")

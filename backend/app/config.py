@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     exotel_token: str = ""
     exotel_subdomain: str = ""
     exotel_phone_number: str = ""
+    daily_api_key: str = ""
+
 
     model_config = {
         "env_file": ".env",
