@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: aireceptionistacrakj6vzhpetfnq.azurecr.io
+  REGISTRY: aireceptionistacr7mputfvxwekoe.azurecr.io
   IMAGE_NAME: ai-receptionist
-  RESOURCE_GROUP: ai-receptionist-prod-rg
-  CONTAINER_APP_NAME: aireceptionistprodakj6vz-app
-  KEYVAULT_NAME: aireceptionistprodak-kv
+  RESOURCE_GROUP: ai-receptionist-rg
+  CONTAINER_APP_NAME: aireceptionistprod7mputf-app
+  KEYVAULT_NAME: aireceptionistprod7m-kv
 
 jobs:
   deploy:
