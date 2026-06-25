@@ -10,7 +10,8 @@ COPY requirements.txt .
 
 # Install numpy wheel first to avoid build-from-source
 RUN pip install --no-cache-dir --only-binary=:all: numpy && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt \
+        --extra-index-url https://pypi.fury.io/daily/
 
 # Runtime stage
 FROM python:3.11-slim

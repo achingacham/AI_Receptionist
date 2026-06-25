@@ -8,7 +8,7 @@ python-multipart>=0.0.9
 tzdata
 plivo>=4.0.0
 numpy
-pipecat-ai[sarvam,openai]==1.0.0
+pipecat-ai[sarvam,openai,daily]==1.0.0
 
 # Azure SDKs
 azure-identity>=1.14.0
