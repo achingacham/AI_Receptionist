@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     exotel_phone_number: str = ""
     daily_api_key: str = ""
 
+    # Storage
+    sqlite_path: str = "data/receptionist.db"
 
     model_config = {
         "env_file": ".env",

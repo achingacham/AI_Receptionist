@@ -4,6 +4,7 @@ const userInput = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
 
 let conversationHistory = [];
+let sessionId = null;
 
 // ── Voice call ──────────────────────────────────────────────────────────────
 let callFrame = null;
@@ -134,7 +135,7 @@ async function sendMessage() {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: conversationHistory }),
+      body: JSON.stringify({ messages: conversationHistory, session_id: sessionId }),
     });
 
     if (!res.ok) {
@@ -145,6 +146,7 @@ async function sendMessage() {
     const data = await res.json();
     removeTyping();
 
+    sessionId = data.session_id;
     appendMessage("assistant", data.reply);
     conversationHistory.push({ role: "assistant", content: data.reply });
   } catch (err) {

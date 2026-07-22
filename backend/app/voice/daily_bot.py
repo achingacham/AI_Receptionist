@@ -4,6 +4,10 @@ Requires daily-python SDK (not on public PyPI — install from Daily.co's index)
 """
 import asyncio
 
+from starlette.concurrency import run_in_threadpool
+
+from .. import storage
+
 
 async def run_daily_bot(room_url: str, token: str):
     try:
@@ -22,6 +26,13 @@ async def run_daily_bot(room_url: str, token: str):
         "Kiran",
         DailyParams(audio_out_enabled=True, transcription_enabled=False),
     )
-    task, _ = build_pipeline(transport, sample_rate=16000, input_audio_codec="pcm")
+    task, context = build_pipeline(transport, sample_rate=16000, input_audio_codec="pcm")
+    call_id = await run_in_threadpool(storage.start_call, "daily", room_url)
+
+    @transport.event_handler("on_client_disconnected")
+    async def on_disconnected(transport, client):
+        await run_in_threadpool(storage.log_transcript, call_id, context.messages)
+        await run_in_threadpool(storage.end_call, call_id)
+
     runner = PipelineRunner()
     await runner.run(task)

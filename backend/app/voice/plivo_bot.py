@@ -9,8 +9,10 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket
 
+from .. import storage
 from .pipeline import build_pipeline
 
 
@@ -30,6 +32,7 @@ async def run_plivo_bot(websocket: WebSocket, stream_id: str):
     )
 
     task, context = build_pipeline(transport)
+    call_id = await run_in_threadpool(storage.start_call, "plivo", stream_id)
 
     @transport.event_handler("on_client_connected")
     async def on_connected(transport, client):
@@ -39,6 +42,8 @@ async def run_plivo_bot(websocket: WebSocket, stream_id: str):
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):
         logger.info("Plivo call disconnected")
+        await run_in_threadpool(storage.log_transcript, call_id, context.messages)
+        await run_in_threadpool(storage.end_call, call_id)
         await task.cancel()
 
     runner = PipelineRunner(handle_sigint=False)

@@ -9,14 +9,16 @@ from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket
 
+from .. import storage
 from .pipeline import build_pipeline
 
 
 async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = "", account_sid: str = "", auth_token: str = ""):
     """Handle a single Exotel call via Pipecat pipeline.
-    
+
     Exotel uses the same Twilio-compatible TwiML format for Media Streams.
     """
 
@@ -39,6 +41,7 @@ async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     )
 
     task, context = build_pipeline(transport)
+    call_id = await run_in_threadpool(storage.start_call, "exotel", call_sid or stream_sid)
 
     @transport.event_handler("on_client_connected")
     async def on_connected(transport, client):
@@ -48,6 +51,8 @@ async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):
         logger.info("Exotel call disconnected")
+        await run_in_threadpool(storage.log_transcript, call_id, context.messages)
+        await run_in_threadpool(storage.end_call, call_id)
         await task.cancel()
 
     runner = PipelineRunner(handle_sigint=False)

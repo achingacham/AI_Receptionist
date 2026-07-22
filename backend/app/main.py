@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +15,16 @@ from .routes.sarvam_test import router as sarvam_test_router
 from .config import settings
 
 from .routes.voice_daily import router as daily_voice_router
+from .db import init_db
 
-app = FastAPI(title="AI Receptionist", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="AI Receptionist", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

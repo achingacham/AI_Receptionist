@@ -1,0 +1,11 @@
+# Reverse proxy in front of the app container.
+#
+# DOMAIN unset  -> "{$DOMAIN}" resolves to ":80" (plain HTTP, no ACME) — fine
+#                  for first boot/testing before DNS is pointed at the VM.
+# DOMAIN set    -> becomes a normal site block; Caddy requests and renews a
+#                  Let's Encrypt cert automatically. Telephony providers
+#                  (Plivo/Twilio/Exotel) require https/wss, so set DOMAIN in
+#                  .env once you have one pointed at this VM's public IP.
+{$DOMAIN} {
+	reverse_proxy app:8000
+}
