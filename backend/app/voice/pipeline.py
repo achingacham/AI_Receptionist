@@ -36,7 +36,7 @@ def build_pipeline(
     """
     stt = SarvamSTTService(
         api_key=settings.sarvam_api_key,
-        model="saaras:v2",
+        model="saaras:v3",
         sample_rate=sample_rate,
         input_audio_codec=input_audio_codec,
     )
@@ -73,7 +73,7 @@ def build_pipeline(
 
     task = PipelineTask(
         pipeline,
-        PipelineParams(allow_interruptions=True),
+        params=PipelineParams(),
     )
 
     return task, context

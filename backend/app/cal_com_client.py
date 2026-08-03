@@ -75,9 +75,30 @@ def book_appointment(
         },
         "metadata": {"appointmentType": summary},
     }
-    resp = httpx.post(f"{_BASE_URL}/bookings", headers=_headers(), json=payload, timeout=15)
-    resp.raise_for_status()
-    return resp.json().get("data", {})
+
+    try:
+        resp = httpx.post(f"{_BASE_URL}/bookings", headers=_headers(), json=payload, timeout=15)
+        status_code = resp.status_code
+        response_text = resp.text
+        print("[Cal.com] book_appointment request:", payload)
+        print("[Cal.com] book_appointment status:", status_code)
+        print("[Cal.com] book_appointment response:", response_text)
+        resp.raise_for_status()
+        return resp.json().get("data", {})
+    except httpx.HTTPStatusError as exc:
+        status_code = exc.response.status_code if exc.response is not None else "unknown"
+        response_text = exc.response.text if exc.response is not None else ""
+        print("[Cal.com] book_appointment failed:", {
+            "request": payload,
+            "status_code": status_code,
+            "response_body": response_text,
+        })
+        raise RuntimeError(
+            f"Cal.com booking failed ({status_code}): {response_text}"
+        ) from exc
+    except Exception as exc:
+        print("[Cal.com] book_appointment unexpected error:", str(exc))
+        raise
 
 
 def find_booking_by_name_and_date(attendee_name: str, date_str: str) -> Optional[dict]:

@@ -12,6 +12,7 @@ from .. import storage
 async def run_daily_bot(room_url: str, token: str):
     try:
         from pipecat.transports.daily.transport import DailyParams, DailyTransport
+        from pipecat.audio.vad.silero import SileroVADAnalyzer
         from pipecat.pipeline.runner import PipelineRunner
         from .pipeline import build_pipeline
     except Exception as e:
@@ -24,7 +25,12 @@ async def run_daily_bot(room_url: str, token: str):
         room_url,
         token,
         "Kiran",
-        DailyParams(audio_out_enabled=True, transcription_enabled=False),
+        DailyParams(
+        audio_in_enabled=True,              # ← was missing; bot must receive caller audio
+        audio_out_enabled=True,
+        transcription_enabled=False,         # keep OFF — Sarvam does STT, and Daily's is the paid trigger
+        vad_analyzer=SileroVADAnalyzer(),    # turn detection for clean interruptions
+   ),
     )
     task, context = build_pipeline(transport, sample_rate=16000, input_audio_codec="pcm")
     call_id = await run_in_threadpool(storage.start_call, "daily", room_url)

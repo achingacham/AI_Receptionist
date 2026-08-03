@@ -1,4 +1,4 @@
-const API_URL = "/api/appointment";
+const API_URL = "/api/chat";
 const chatWindow = document.getElementById("chat-window");
 const userInput = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
@@ -11,7 +11,7 @@ let callFrame = null;
 let inCall = false;
 
 async function toggleCall() {
-  if (inCall) {
+  if (inCall || callFrame) {
     endCall();
   } else {
     startCall();
@@ -22,6 +22,13 @@ async function startCall() {
   const callBtn = document.getElementById("call-btn");
   const overlay = document.getElementById("call-overlay");
   const statusText = document.getElementById("call-status-text");
+
+  if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    callBtn.disabled = true;
+    overlay.style.display = "flex";
+    statusText.textContent = "Voice calls require HTTPS or localhost. Please access this app over HTTPS.";
+    return;
+  }
 
   callBtn.disabled = true;
   overlay.style.display = "flex";
@@ -53,7 +60,8 @@ async function startCall() {
 
     callFrame.on("error", (e) => {
       console.error("Daily error:", e);
-      endCall();
+      statusText.textContent = `Call error: ${e?.message || e}`;
+      callBtn.disabled = false;
     });
 
     await callFrame.join({ url: room_url, token });
