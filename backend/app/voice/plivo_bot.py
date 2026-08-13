@@ -13,7 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket
 
 from .. import storage
-from .pipeline import build_pipeline
+from .pipeline import build_greeting_frame, build_pipeline
 
 
 async def run_plivo_bot(websocket: WebSocket, stream_id: str):
@@ -37,7 +37,7 @@ async def run_plivo_bot(websocket: WebSocket, stream_id: str):
     @transport.event_handler("on_client_connected")
     async def on_connected(transport, client):
         logger.info(f"Plivo call connected — stream_id={stream_id}")
-        await task.queue_frames([LLMRunFrame()])
+        await task.queue_frames([build_greeting_frame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

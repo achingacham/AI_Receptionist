@@ -5,6 +5,7 @@ browser (Daily.co) uses 16kHz PCM — pass sample_rate and input_audio_codec acc
 """
 
 from pipecat.pipeline.pipeline import Pipeline
+from pipecat.frames.frames import TextFrame
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMContext,
@@ -77,3 +78,12 @@ def build_pipeline(
     )
 
     return task, context
+
+
+def build_greeting_frame() -> TextFrame:
+    """Build the voice greeting text frame for connected calls."""
+    greeting = (
+        f"Hello, this is {settings.receptionist_name} from {settings.business_name}. "
+        "How can I help you today?"
+    )
+    return TextFrame(text=greeting)

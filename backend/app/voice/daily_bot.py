@@ -14,7 +14,7 @@ async def run_daily_bot(room_url: str, token: str):
         from pipecat.transports.daily.transport import DailyParams, DailyTransport
         from pipecat.audio.vad.silero import SileroVADAnalyzer
         from pipecat.pipeline.runner import PipelineRunner
-        from .pipeline import build_pipeline
+        from .pipeline import build_greeting_frame, build_pipeline
     except Exception as e:
         raise RuntimeError(
             "daily-python SDK not installed. "
@@ -32,8 +32,12 @@ async def run_daily_bot(room_url: str, token: str):
         vad_analyzer=SileroVADAnalyzer(),    # turn detection for clean interruptions
    ),
     )
-    task, context = build_pipeline(transport, sample_rate=16000, input_audio_codec="pcm")
+    task, context = build_pipeline(transport, sample_rate=16000, input_audio_codec="wav")
     call_id = await run_in_threadpool(storage.start_call, "daily", room_url)
+
+    @transport.event_handler("on_client_connected")
+    async def on_connected(transport, client):
+        await task.queue_frames([build_greeting_frame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

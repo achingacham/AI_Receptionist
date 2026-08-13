@@ -13,7 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.websockets import WebSocket
 
 from .. import storage
-from .pipeline import build_pipeline
+from .pipeline import build_greeting_frame, build_pipeline
 
 
 async def run_twilio_bot(websocket: WebSocket, stream_sid: str, call_sid: str = "", account_sid: str = "", auth_token: str = ""):
@@ -43,7 +43,7 @@ async def run_twilio_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     @transport.event_handler("on_client_connected")
     async def on_connected(transport, client):
         logger.info(f"Twilio call connected — stream_sid={stream_sid}")
-        await task.queue_frames([LLMRunFrame()])
+        await task.queue_frames([build_greeting_frame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):
