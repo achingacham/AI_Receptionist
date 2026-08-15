@@ -7,5 +7,7 @@
 #                  (Plivo/Twilio/Exotel) require https/wss, so set DOMAIN in
 #                  .env once you have one pointed at this VM's public IP.
 {$DOMAIN} {
-	reverse_proxy app:8000
+	# When Caddy runs on the host network it cannot resolve Docker service
+	# names like "app". Proxy directly to the host uvicorn instance.
+	reverse_proxy 127.0.0.1:8000
 }

@@ -108,6 +108,35 @@ For a public deployment, you should ensure:
 - the `.env` file is not committed to source control
 - persistent storage is configured for SQLite and any uploaded/generated data
 
+### HTTPS (Caddy) and DNS
+
+- **Point a real domain** to your server's public IP and set `DOMAIN` in `.env`.
+- **Open ports 80 and 443** in both your cloud provider security rules and the VM firewall so ACME (Let's Encrypt) can validate the host.
+- **Caddy will attempt ACME automatically** when `DOMAIN` is set. If Caddy runs on the host network it may not be able to resolve Docker service names (for example `app`); in that case either:
+   - run Caddy inside the same Docker Compose network so it can reverse_proxy to `app:8000`, or
+   - keep Caddy on the host network and reverse_proxy to the host loopback `127.0.0.1:8000` (this repo uses that approach when Caddy runs host-networked).
+- If ACME fails because your VM cannot be reached from the public Internet (hairpin / NAT issues), either attach a public IP / load balancer or use a DNS-01 challenge (Cloudflare) to obtain certs without opening inbound ports.
+
+Example `Caddyfile` snippet for DNS-01 with Cloudflare (requires `CLOUDFLARE_API_TOKEN`):
+
+```text
+aireceptionist.example.com {
+   tls {
+      dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+   }
+   reverse_proxy app:8000
+}
+```
+
+Verification commands (from the server):
+
+```bash
+curl -v http://127.0.0.1:8000/health
+curl -vk https://<your-domain>/health
+```
+
+If you rely on host networking and Caddy is returning 502s, check `Caddyfile` upstream and Caddy logs (`docker logs caddy_host`) — common fixes are switching the upstream to `127.0.0.1:8000` or moving Caddy into the Compose network.
+
 ## Deployment to Azure
 
 This project includes an Azure deployment script for provisioning the required infrastructure.

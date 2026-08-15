@@ -80,8 +80,15 @@ mkdir -p data
 sudo chown -R 1000:1000 data
 
 echo "==> Building and starting containers"
-sudo docker compose up -d --build
+if sudo docker compose version >/dev/null 2>&1; then
+  sudo docker compose up -d --build
+elif command -v docker-compose >/dev/null 2>&1; then
+  sudo docker-compose up -d --build
+else
+  echo "Neither Docker Compose plugin nor docker-compose binary is available." >&2
+  exit 1
+fi
 
 echo "==> Done. Checking health"
 sleep 3
-curl -fsS http://localhost/health && echo || echo "Health check failed — check 'docker compose logs -f'."
+curl -fsS http://localhost/health && echo || echo "Health check failed — check 'docker-compose logs -f' or 'docker compose logs -f'."
