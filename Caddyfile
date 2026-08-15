@@ -9,5 +9,10 @@
 {$DOMAIN} {
 	# When Caddy runs on the host network it cannot resolve Docker service
 	# names like "app". Proxy directly to the host uvicorn instance.
-	reverse_proxy 127.0.0.1:8000
+	# Force HTTP/1.1 to upstream so WebSocket upgrades are forwarded reliably.
+	reverse_proxy 127.0.0.1:8000 {
+		transport http {
+			versions 1.1
+		}
+	}
 }

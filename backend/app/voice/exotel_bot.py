@@ -22,6 +22,19 @@ async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     Exotel uses the same Twilio-compatible TwiML format for Media Streams.
     """
 
+    # Use the basic TwilioFrameSerializer signature (avoid passing
+    # `auto_hang_up` for compatibility across pipecat versions).
+    # Disable auto_hang_up to avoid requiring Twilio credentials for Exotel
+    params = TwilioFrameSerializer.InputParams()
+    params.auto_hang_up = False
+    serializer = TwilioFrameSerializer(
+        stream_sid=stream_sid,
+        call_sid=call_sid,
+        account_sid=account_sid,
+        auth_token=auth_token,
+        params=params,
+    )
+
     transport = FastAPIWebsocketTransport(
         websocket=websocket,
         params=FastAPIWebsocketParams(
@@ -30,13 +43,7 @@ async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
             audio_in_sample_rate=8000,
             audio_out_sample_rate=8000,
             add_wav_header=False,
-            serializer=TwilioFrameSerializer(
-                stream_sid=stream_sid,
-                call_sid=call_sid,
-                account_sid=account_sid,
-                auth_token=auth_token,
-                auto_hang_up=bool(call_sid and account_sid and auth_token),
-            ),
+            serializer=serializer,
         ),
     )
 

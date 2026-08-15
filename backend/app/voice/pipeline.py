@@ -84,6 +84,9 @@ def build_greeting_frame() -> TextFrame:
     """Build the voice greeting text frame for connected calls."""
     greeting = (
         f"Hello, this is {settings.receptionist_name} from {settings.business_name}. "
-        "How can I help you today?"
+        "I can help with booking appointments, rescheduling, cancellations, or general questions. "
+        "Please speak slowly and clearly so I can understand you. "
+        "If you'd like to book an appointment, please tell me the preferred date and time. "
+        "I'll confirm and send details to your phone or email."
     )
     return TextFrame(text=greeting)
