@@ -16,8 +16,12 @@ class Call(Base):
     __tablename__ = "calls"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    channel: Mapped[str] = mapped_column(String(20), index=True)  # chat, appointment, plivo, twilio, exotel, daily
-    external_id: Mapped[str] = mapped_column(String(128), index=True)  # session_id, call_sid, stream_id, room name
+    channel: Mapped[str] = mapped_column(
+        String(20), index=True
+    )  # chat, appointment, plivo, twilio, exotel, daily
+    external_id: Mapped[str] = mapped_column(
+        String(128), index=True
+    )  # session_id, call_sid, stream_id, room name
     started_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

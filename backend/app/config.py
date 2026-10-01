@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Voice (Sarvam AI + Plivo/Twilio/Exotel)
     sarvam_api_key: str = ""
     sarvam_tts_voice: str = "abhilash"  # male voice; see SarvamTTSSpeakerV2/V3
-    voice_provider: str = "plivo"   # "plivo", "twilio", or "exotel"
+    voice_provider: str = "plivo"  # "plivo", "twilio", or "exotel"
     plivo_auth_id: str = ""
     plivo_auth_token: str = ""
     plivo_phone_number: str = ""

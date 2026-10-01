@@ -47,7 +47,9 @@ __CONVERSATION__
 def _extract_intent(messages: list[dict]) -> dict:
     today = date.today().isoformat()
     conversation = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages)
-    prompt = INTENT_EXTRACTION_PROMPT.replace("__TODAY__", today).replace("__CONVERSATION__", conversation)
+    prompt = INTENT_EXTRACTION_PROMPT.replace("__TODAY__", today).replace(
+        "__CONVERSATION__", conversation
+    )
 
     raw = client.generate(
         f"SYSTEM:\nYou extract structured JSON from conversations. Output only JSON.\n\nUSER:\n{prompt}",
@@ -84,8 +86,12 @@ def get_calendar_context(messages: list[dict]) -> str:
         date_str = intent.get("date")
         if date_str:
             try:
-                slots = cal.get_available_slots(date_str, duration_minutes=intent.get("duration_minutes") or 30)
-                calendar_context = f"[Calendar] Available slots on {date_str}: {_format_slots(slots)}"
+                slots = cal.get_available_slots(
+                    date_str, duration_minutes=intent.get("duration_minutes") or 30
+                )
+                calendar_context = (
+                    f"[Calendar] Available slots on {date_str}: {_format_slots(slots)}"
+                )
             except Exception as e:
                 calendar_context = f"[Calendar] Could not fetch availability: {e}"
 
@@ -114,7 +120,9 @@ def get_calendar_context(messages: list[dict]) -> str:
             except Exception as e:
                 calendar_context = f"[Calendar] Booking failed: {e}"
         else:
-            missing = [f for f, v in [("date", date_str), ("time", time_str), ("name", name)] if not v]
+            missing = [
+                f for f, v in [("date", date_str), ("time", time_str), ("name", name)] if not v
+            ]
             calendar_context = f"[Calendar] Cannot book — missing: {', '.join(missing)}."
 
     elif action == "reschedule":

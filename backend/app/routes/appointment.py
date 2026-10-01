@@ -37,10 +37,13 @@ async def appointment_endpoint(request: AppointmentRequest):
         reply = handle_appointment(messages)
     except Exception as e:
         import traceback
-        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+        raise HTTPException(status_code=500, detail=traceback.format_exc()) from e
 
     last_message = request.messages[-1]
-    await run_in_threadpool(storage.record_turn, "appointment", session_id, last_message.role, last_message.content)
+    await run_in_threadpool(
+        storage.record_turn, "appointment", session_id, last_message.role, last_message.content
+    )
     await run_in_threadpool(storage.record_turn, "appointment", session_id, "assistant", reply)
 
     return AppointmentResponse(reply=reply, session_id=session_id)

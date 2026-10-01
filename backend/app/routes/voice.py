@@ -51,7 +51,12 @@ async def call_incoming(request: Request):
     try:
         body_bytes = await request.body()
         body_text = body_bytes.decode("utf-8", errors="replace") if body_bytes else ""
-        logger.info("Incoming webhook: provider=%s host=%s body=%s", settings.voice_provider, host, body_text)
+        logger.info(
+            "Incoming webhook: provider=%s host=%s body=%s",
+            settings.voice_provider,
+            host,
+            body_text,
+        )
     except Exception:
         logger.exception("Failed to read incoming webhook body")
 
@@ -70,14 +75,14 @@ async def call_stream(websocket: WebSocket):
     """WebSocket audio stream for the active voice provider."""
     if settings.voice_provider == "twilio":
         from ..voice.twilio_bot import run_twilio_bot
+
         await websocket.accept()
         logger.info("WebSocket accepted (twilio) from client")
         try:
             start_msg = await websocket.receive_json()
             logger.info("First websocket frame (twilio): %s", start_msg)
-            stream_sid = (
-                start_msg.get("start", {}).get("streamSid")
-                or start_msg.get("streamSid", "unknown")
+            stream_sid = start_msg.get("start", {}).get("streamSid") or start_msg.get(
+                "streamSid", "unknown"
             )
             call_sid = start_msg.get("start", {}).get("callSid", "")
             account_sid = start_msg.get("start", {}).get("accountSid", "")
@@ -89,14 +94,14 @@ async def call_stream(websocket: WebSocket):
         await run_twilio_bot(websocket, stream_sid, call_sid, account_sid, auth_token)
     elif settings.voice_provider == "exotel":
         from ..voice.exotel_bot import run_exotel_bot
+
         await websocket.accept()
         logger.info("WebSocket accepted (exotel) from client")
         try:
             start_msg = await websocket.receive_json()
             logger.info("First websocket frame (exotel): %s", start_msg)
-            stream_sid = (
-                start_msg.get("start", {}).get("streamSid")
-                or start_msg.get("streamSid", "unknown")
+            stream_sid = start_msg.get("start", {}).get("streamSid") or start_msg.get(
+                "streamSid", "unknown"
             )
             call_sid = start_msg.get("start", {}).get("callSid", "")
             account_sid = start_msg.get("start", {}).get("accountSid", "")
@@ -108,14 +113,14 @@ async def call_stream(websocket: WebSocket):
         await run_exotel_bot(websocket, stream_sid, call_sid, account_sid, auth_token)
     else:
         from ..voice.plivo_bot import run_plivo_bot
+
         await websocket.accept()
         logger.info("WebSocket accepted (plivo) from client")
         try:
             start_msg = await websocket.receive_json()
             logger.info("First websocket frame (plivo): %s", start_msg)
-            stream_id = (
-                start_msg.get("start", {}).get("streamId")
-                or start_msg.get("streamId", "unknown")
+            stream_id = start_msg.get("start", {}).get("streamId") or start_msg.get(
+                "streamId", "unknown"
             )
         except Exception:
             logger.exception("Error reading first websocket frame (plivo)")

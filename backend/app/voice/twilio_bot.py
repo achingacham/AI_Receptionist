@@ -3,7 +3,6 @@
 from loguru import logger
 
 from pipecat.pipeline.runner import PipelineRunner
-from pipecat.processors.aggregators.llm_response_universal import LLMRunFrame
 from pipecat.serializers.twilio import TwilioFrameSerializer
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
@@ -16,7 +15,13 @@ from .. import storage
 from .pipeline import build_greeting_frame, build_pipeline
 
 
-async def run_twilio_bot(websocket: WebSocket, stream_sid: str, call_sid: str = "", account_sid: str = "", auth_token: str = ""):
+async def run_twilio_bot(
+    websocket: WebSocket,
+    stream_sid: str,
+    call_sid: str = "",
+    account_sid: str = "",
+    auth_token: str = "",
+):
     """Handle a single Twilio call via Pipecat pipeline."""
 
     transport = FastAPIWebsocketTransport(

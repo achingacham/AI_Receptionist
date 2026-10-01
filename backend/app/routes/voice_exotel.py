@@ -36,9 +36,8 @@ async def exotel_stream(websocket: WebSocket):
     await websocket.accept()
     try:
         start_msg = await websocket.receive_json()
-        stream_sid = (
-            start_msg.get("start", {}).get("streamSid")
-            or start_msg.get("streamSid", "unknown")
+        stream_sid = start_msg.get("start", {}).get("streamSid") or start_msg.get(
+            "streamSid", "unknown"
         )
     except Exception:
         stream_sid = "unknown"

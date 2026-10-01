@@ -69,5 +69,7 @@ def log_transcript(call_id: int, messages: list[dict]) -> None:
             role = m.get("role")
             if role == "system":
                 continue
-            session.add(Message(call_id=call_id, role=role, content=_flatten_content(m.get("content"))))
+            session.add(
+                Message(call_id=call_id, role=role, content=_flatten_content(m.get("content")))
+            )
         session.commit()

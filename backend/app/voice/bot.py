@@ -67,15 +67,17 @@ async def run_bot(websocket: WebSocket, stream_id: str):
     context = LLMContext(messages=[{"role": "system", "content": system_prompt}])
     context_aggregator = LLMContextAggregatorPair(context)
 
-    pipeline = Pipeline([
-        transport.input(),
-        stt,
-        context_aggregator.user(),
-        llm,
-        tts,
-        transport.output(),
-        context_aggregator.assistant(),
-    ])
+    pipeline = Pipeline(
+        [
+            transport.input(),
+            stt,
+            context_aggregator.user(),
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
+        ]
+    )
 
     task = PipelineTask(
         pipeline,
@@ -86,6 +88,7 @@ async def run_bot(websocket: WebSocket, stream_id: str):
     async def on_connected(transport, client):
         logger.info("Plivo call connected")
         from pipecat.processors.aggregators.llm_response_universal import LLMRunFrame
+
         await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")

@@ -54,4 +54,8 @@ if os.path.exists(frontend_path):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "business": settings.business_name, "receptionist": settings.receptionist_name}
+    return {
+        "status": "ok",
+        "business": settings.business_name,
+        "receptionist": settings.receptionist_name,
+    }

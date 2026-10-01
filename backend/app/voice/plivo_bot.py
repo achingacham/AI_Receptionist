@@ -3,7 +3,6 @@
 from loguru import logger
 
 from pipecat.pipeline.runner import PipelineRunner
-from pipecat.processors.aggregators.llm_response_universal import LLMRunFrame
 from pipecat.serializers.plivo import PlivoFrameSerializer
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,

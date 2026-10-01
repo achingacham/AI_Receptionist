@@ -2,7 +2,6 @@
 
 Requires daily-python SDK (not on public PyPI — install from Daily.co's index).
 """
-import asyncio
 
 from starlette.concurrency import run_in_threadpool
 
@@ -26,11 +25,11 @@ async def run_daily_bot(room_url: str, token: str):
         token,
         "Kiran",
         DailyParams(
-        audio_in_enabled=True,              # ← was missing; bot must receive caller audio
-        audio_out_enabled=True,
-        transcription_enabled=False,         # keep OFF — Sarvam does STT, and Daily's is the paid trigger
-        vad_analyzer=SileroVADAnalyzer(),    # turn detection for clean interruptions
-   ),
+            audio_in_enabled=True,  # ← was missing; bot must receive caller audio
+            audio_out_enabled=True,
+            transcription_enabled=False,  # keep OFF — Sarvam does STT, and Daily's is the paid trigger
+            vad_analyzer=SileroVADAnalyzer(),  # turn detection for clean interruptions
+        ),
     )
     task, context = build_pipeline(transport, sample_rate=16000, input_audio_codec="wav")
     call_id = await run_in_threadpool(storage.start_call, "daily", room_url)

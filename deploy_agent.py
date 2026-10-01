@@ -72,6 +72,7 @@ CONTAINER_ENV_KEYS = [
 
 # ─── Utilities ────────────────────────────────────────────────────────────────
 
+
 def header(title: str) -> None:
     print(f"\n{'=' * 60}")
     print(f"  {title}")
@@ -91,7 +92,9 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def run(args: list[str], *, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess:
+def run(
+    args: list[str], *, check: bool = True, capture: bool = True
+) -> subprocess.CompletedProcess:
     """Run a command, print it, and exit on failure when check=True."""
     display = " ".join(str(a) for a in args)
     print(f"    $ {display}")
@@ -128,6 +131,7 @@ def parse_env(path: Path) -> dict[str, str]:
 
 # ─── Deployment steps ─────────────────────────────────────────────────────────
 
+
 def preflight_checks() -> dict[str, str]:
     """Verify tools are available, user is authenticated, and .env exists."""
     header("Pre-flight Checks")
@@ -157,7 +161,7 @@ def preflight_checks() -> dict[str, str]:
     # .env file
     if not ENV_FILE.exists():
         fail(f".env not found at {ENV_FILE}. Copy .env.azure and fill in your credentials.")
-    ok(f".env found")
+    ok(".env found")
 
     return {}
 
@@ -167,36 +171,63 @@ def deploy_infrastructure() -> dict[str, str]:
     header("Infrastructure Deployment (Bicep)")
 
     print(f"  Creating resource group '{RESOURCE_GROUP}' ...")
-    run([
-        "az", "group", "create",
-        "--name", RESOURCE_GROUP,
-        "--location", LOCATION,
-        "--output", "none",
-    ])
+    run(
+        [
+            "az",
+            "group",
+            "create",
+            "--name",
+            RESOURCE_GROUP,
+            "--location",
+            LOCATION,
+            "--output",
+            "none",
+        ]
+    )
     ok("Resource group ready")
 
     print("  Validating Bicep template ...")
-    r = run([
-        "az", "deployment", "group", "validate",
-        "--resource-group", RESOURCE_GROUP,
-        "--template-file", str(BICEP_MAIN),
-        "--parameters", str(BICEP_PARAMS),
-        "--output", "none",
-    ], check=False)
+    r = run(
+        [
+            "az",
+            "deployment",
+            "group",
+            "validate",
+            "--resource-group",
+            RESOURCE_GROUP,
+            "--template-file",
+            str(BICEP_MAIN),
+            "--parameters",
+            str(BICEP_PARAMS),
+            "--output",
+            "none",
+        ],
+        check=False,
+    )
     if r.returncode != 0:
         print(r.stderr)
         fail("Bicep validation failed. Fix the errors above before deploying.")
     ok("Template valid")
 
     print("  Deploying infrastructure (this takes ~10–15 min on first run) ...")
-    result = run([
-        "az", "deployment", "group", "create",
-        "--resource-group", RESOURCE_GROUP,
-        "--name", DEPLOYMENT_NAME,
-        "--template-file", str(BICEP_MAIN),
-        "--parameters", str(BICEP_PARAMS),
-        "--output", "json",
-    ])
+    result = run(
+        [
+            "az",
+            "deployment",
+            "group",
+            "create",
+            "--resource-group",
+            RESOURCE_GROUP,
+            "--name",
+            DEPLOYMENT_NAME,
+            "--template-file",
+            str(BICEP_MAIN),
+            "--parameters",
+            str(BICEP_PARAMS),
+            "--output",
+            "json",
+        ]
+    )
 
     deployment = json.loads(result.stdout)
     raw_outputs = deployment.get("properties", {}).get("outputs", {})
@@ -229,12 +260,20 @@ def deploy_infrastructure() -> dict[str, str]:
 
 def _infer_container_app_name() -> str:
     """Fallback: query Azure for the container app in the resource group."""
-    r = run([
-        "az", "containerapp", "list",
-        "--resource-group", RESOURCE_GROUP,
-        "--query", "[0].name",
-        "--output", "tsv",
-    ], check=False)
+    r = run(
+        [
+            "az",
+            "containerapp",
+            "list",
+            "--resource-group",
+            RESOURCE_GROUP,
+            "--query",
+            "[0].name",
+            "--output",
+            "tsv",
+        ],
+        check=False,
+    )
     return r.stdout.strip() if r.returncode == 0 else "aireceptionist-app"
 
 
@@ -247,34 +286,51 @@ def build_and_push_image(registry_login_server: str) -> str:
 
     print(f"  Queuing build in ACR '{acr_name}' (uploading ~280 MB context) ...")
     # --no-wait avoids streaming logs back through Windows console (cp1252 crash).
-    result = run([
-        "az", "acr", "build",
-        "--registry", acr_name,
-        "--image", f"{IMAGE_NAME}:latest",
-        "--file", str(PROJECT_ROOT / "Dockerfile"),
-        "--no-wait",
-        str(PROJECT_ROOT),
-    ])
+    run(
+        [
+            "az",
+            "acr",
+            "build",
+            "--registry",
+            acr_name,
+            "--image",
+            f"{IMAGE_NAME}:latest",
+            "--file",
+            str(PROJECT_ROOT / "Dockerfile"),
+            "--no-wait",
+            str(PROJECT_ROOT),
+        ]
+    )
     ok("Build queued in Azure")
 
     # Poll the latest run until it succeeds or fails (max 30 min).
     print("  Polling build status ...")
     for attempt in range(60):
         time.sleep(30)
-        r = run([
-            "az", "acr", "task", "list-runs",
-            "--registry", acr_name,
-            "--top", "1",
-            "--query", "[0].{status:status,runId:runId}",
-            "--output", "json",
-        ], check=False)
+        r = run(
+            [
+                "az",
+                "acr",
+                "task",
+                "list-runs",
+                "--registry",
+                acr_name,
+                "--top",
+                "1",
+                "--query",
+                "[0].{status:status,runId:runId}",
+                "--output",
+                "json",
+            ],
+            check=False,
+        )
         if r.returncode != 0 or not r.stdout.strip():
-            print(f"    [{attempt+1}/60] Could not query run status, retrying ...")
+            print(f"    [{attempt + 1}/60] Could not query run status, retrying ...")
             continue
         info = json.loads(r.stdout)
         status = info.get("status", "Unknown")
         run_id = info.get("runId", "?")
-        print(f"    [{attempt+1}/60] Run {run_id}: {status}")
+        print(f"    [{attempt + 1}/60] Run {run_id}: {status}")
         if status == "Succeeded":
             ok(f"Image built and pushed -> {image_tag}")
             return image_tag
@@ -295,25 +351,43 @@ def configure_keyvault_secrets(keyvault_name: str) -> None:
         if not value:
             warn(f"Skipping {secret_name} — {env_key} not set in .env")
             continue
-        run([
-            "az", "keyvault", "secret", "set",
-            "--vault-name", keyvault_name,
-            "--name", secret_name,
-            "--value", value,
-            "--output", "none",
-        ])
+        run(
+            [
+                "az",
+                "keyvault",
+                "secret",
+                "set",
+                "--vault-name",
+                keyvault_name,
+                "--name",
+                secret_name,
+                "--value",
+                value,
+                "--output",
+                "none",
+            ]
+        )
         ok(f"Secret set: {secret_name}")
 
     # DATABASE_URL is also a secret
     db_url = env.get("DATABASE_URL", "")
     if db_url:
-        run([
-            "az", "keyvault", "secret", "set",
-            "--vault-name", keyvault_name,
-            "--name", "DATABASE-URL",
-            "--value", db_url,
-            "--output", "none",
-        ])
+        run(
+            [
+                "az",
+                "keyvault",
+                "secret",
+                "set",
+                "--vault-name",
+                keyvault_name,
+                "--name",
+                "DATABASE-URL",
+                "--value",
+                db_url,
+                "--output",
+                "none",
+            ]
+        )
         ok("Secret set: DATABASE-URL")
 
 
@@ -340,13 +414,22 @@ def update_container_app(container_app_name: str, image_tag: str, infra: dict[st
         f"calcom-api-key=keyvaultref:{kv_base}/CALCOM-API-KEY,identityref:{identity_id}",
     ]
     print(f"  Wiring Key Vault secrets into '{container_app_name}' ...")
-    run([
-        "az", "containerapp", "secret", "set",
-        "--name", container_app_name,
-        "--resource-group", RESOURCE_GROUP,
-        "--secrets", *kv_secrets,
-        "--output", "none",
-    ])
+    run(
+        [
+            "az",
+            "containerapp",
+            "secret",
+            "set",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            RESOURCE_GROUP,
+            "--secrets",
+            *kv_secrets,
+            "--output",
+            "none",
+        ]
+    )
     ok("Key Vault secret references set")
 
     env_vars: list[str] = []
@@ -369,11 +452,17 @@ def update_container_app(container_app_name: str, image_tag: str, infra: dict[st
 
     print(f"  Updating '{container_app_name}' with new image ...")
     cmd = [
-        "az", "containerapp", "update",
-        "--name", container_app_name,
-        "--resource-group", RESOURCE_GROUP,
-        "--image", image_tag,
-        "--output", "none",
+        "az",
+        "containerapp",
+        "update",
+        "--name",
+        container_app_name,
+        "--resource-group",
+        RESOURCE_GROUP,
+        "--image",
+        image_tag,
+        "--output",
+        "none",
     ]
     if env_vars:
         cmd += ["--set-env-vars"] + env_vars
@@ -411,17 +500,24 @@ def verify_health(app_url: str, retries: int = 12, interval: int = 15) -> bool:
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     global RESOURCE_GROUP
 
     parser = argparse.ArgumentParser(description="Deploy AI Receptionist to Azure Container Apps")
-    parser.add_argument("--skip-infra", action="store_true", help="Skip Bicep infrastructure deployment")
+    parser.add_argument(
+        "--skip-infra", action="store_true", help="Skip Bicep infrastructure deployment"
+    )
     parser.add_argument("--skip-build", action="store_true", help="Skip Docker build and push")
-    parser.add_argument("--skip-secrets", action="store_true", help="Skip Key Vault secret configuration")
+    parser.add_argument(
+        "--skip-secrets", action="store_true", help="Skip Key Vault secret configuration"
+    )
     parser.add_argument("--resource-group", help="Override resource group name")
     parser.add_argument("--registry", help="Override ACR login server (required when --skip-infra)")
     parser.add_argument("--keyvault", help="Override Key Vault name (required when --skip-infra)")
-    parser.add_argument("--app-name", help="Override Container App name (required when --skip-infra)")
+    parser.add_argument(
+        "--app-name", help="Override Container App name (required when --skip-infra)"
+    )
     parser.add_argument("--app-url", help="Override app URL for health check")
     args = parser.parse_args()
 
@@ -439,7 +535,9 @@ def main() -> None:
         if not (args.registry and args.keyvault and args.app_name):
             fail("--skip-infra requires --registry, --keyvault, and --app-name")
         registry_name = args.registry.split(".")[0]
-        registry_login_server = args.registry if ".azurecr.io" in args.registry else f"{registry_name}.azurecr.io"
+        registry_login_server = (
+            args.registry if ".azurecr.io" in args.registry else f"{registry_name}.azurecr.io"
+        )
         infra = {
             "registry_name": registry_name,
             "registry_login_server": registry_login_server,
@@ -480,7 +578,9 @@ def main() -> None:
 
     if not healthy:
         print("  To check logs:")
-        print(f"    az containerapp logs show --name {infra['container_app_name']} --resource-group {RESOURCE_GROUP} --follow")
+        print(
+            f"    az containerapp logs show --name {infra['container_app_name']} --resource-group {RESOURCE_GROUP} --follow"
+        )
         print()
 
 

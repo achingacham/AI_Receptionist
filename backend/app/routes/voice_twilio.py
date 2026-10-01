@@ -36,9 +36,8 @@ async def twilio_stream(websocket: WebSocket):
     await websocket.accept()
     try:
         start_msg = await websocket.receive_json()
-        stream_sid = (
-            start_msg.get("start", {}).get("streamSid")
-            or start_msg.get("streamSid", "unknown")
+        stream_sid = start_msg.get("start", {}).get("streamSid") or start_msg.get(
+            "streamSid", "unknown"
         )
         call_sid = start_msg.get("start", {}).get("callSid", "")
         account_sid = start_msg.get("start", {}).get("accountSid", "")
@@ -46,6 +45,6 @@ async def twilio_stream(websocket: WebSocket):
         stream_sid = "unknown"
         call_sid = ""
         account_sid = ""
-    
+
     auth_token = settings.twilio_auth_token or ""
     await run_twilio_bot(websocket, stream_sid, call_sid, account_sid, auth_token)

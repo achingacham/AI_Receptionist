@@ -12,7 +12,6 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMContext,
     LLMContextAggregatorPair,
-    LLMRunFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.openai.llm import OpenAILLMService
@@ -96,16 +95,18 @@ def build_pipeline(
     context_aggregator = LLMContextAggregatorPair(context)
     calendar_intent = CalendarIntentProcessor(system_prompt)
 
-    pipeline = Pipeline([
-        transport.input(),
-        stt,
-        context_aggregator.user(),
-        calendar_intent,
-        llm,
-        tts,
-        transport.output(),
-        context_aggregator.assistant(),
-    ])
+    pipeline = Pipeline(
+        [
+            transport.input(),
+            stt,
+            context_aggregator.user(),
+            calendar_intent,
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
+        ]
+    )
 
     task = PipelineTask(
         pipeline,

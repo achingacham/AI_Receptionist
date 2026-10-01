@@ -8,8 +8,10 @@ from backend.app.voice.pipeline import build_greeting_frame, settings as voice_s
 
 client = TestClient(app)
 
+
 async def dummy_run_daily_bot(room_url: str, token: str):
     return None
+
 
 async def dummy_daily_post(path: str, body: dict):
     if path == "/rooms":
@@ -46,7 +48,10 @@ def test_build_greeting_frame_uses_receptionist_and_business_name():
     voice_settings.business_name = "Test Business"
 
     frame = build_greeting_frame()
-    assert frame.text == "Hello, this is Test Receptionist from Test Business. How can I help you today?"
+    assert (
+        frame.text
+        == "Hello, this is Test Receptionist from Test Business. How can I help you today?"
+    )
 
 
 def test_start_voice_call_requires_daily_api_key(monkeypatch):

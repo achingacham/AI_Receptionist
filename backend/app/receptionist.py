@@ -4,7 +4,9 @@ from .llm_client import LLMClient
 from .scenarios import SCENARIO_PROMPTS
 
 # Initialize LLM client (requires LLM_API_KEY in env)
-client = LLMClient(api_key=settings.llm_api_key or "", api_url=settings.llm_api_url, model=settings.llm_model)
+client = LLMClient(
+    api_key=settings.llm_api_key or "", api_url=settings.llm_api_url, model=settings.llm_model
+)
 
 
 def build_system_prompt(scenario: str = "general") -> str:

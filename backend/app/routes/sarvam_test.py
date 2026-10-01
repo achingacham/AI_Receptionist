@@ -4,7 +4,6 @@ No Twilio or telephony required. The browser records WAV audio, POSTs it here,
 and gets back a JSON payload with the transcript, LLM reply, and base64 audio.
 """
 
-import base64
 from fastapi import APIRouter, File, HTTPException, UploadFile
 import httpx
 
@@ -42,7 +41,9 @@ async def voice_chat(audio: UploadFile = File(...)):
             )
         transcript = stt_resp.json().get("transcript", "").strip()
         if not transcript:
-            raise HTTPException(status_code=400, detail="Could not transcribe audio — is the microphone working?")
+            raise HTTPException(
+                status_code=400, detail="Could not transcribe audio — is the microphone working?"
+            )
 
         # ── 2. LLM ───────────────────────────────────────────────────────────
         system_prompt = build_system_prompt("appointment") + _VOICE_SYSTEM_SUFFIX
@@ -54,7 +55,7 @@ async def voice_chat(audio: UploadFile = File(...)):
             raise HTTPException(
                 status_code=502,
                 detail=f"LLM error {e.response.status_code}: {e.response.text}",
-            )
+            ) from e
 
         # ── 3. Sarvam TTS ────────────────────────────────────────────────────
         tts_resp = await client.post(

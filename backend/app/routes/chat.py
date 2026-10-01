@@ -37,10 +37,12 @@ async def chat_endpoint(request: ChatRequest):
     try:
         reply = chat(messages, scenario=request.scenario)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     last_message = request.messages[-1]
-    await run_in_threadpool(storage.record_turn, "chat", session_id, last_message.role, last_message.content)
+    await run_in_threadpool(
+        storage.record_turn, "chat", session_id, last_message.role, last_message.content
+    )
     await run_in_threadpool(storage.record_turn, "chat", session_id, "assistant", reply)
 
     return ChatResponse(reply=reply, session_id=session_id)

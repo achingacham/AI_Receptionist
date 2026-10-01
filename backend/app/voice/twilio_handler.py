@@ -22,6 +22,7 @@ from ..appointment_handler import handle_appointment
 _MULAW_BIAS = 0x84
 _MULAW_CLIP = 32635
 
+
 def _linear2ulaw(sample: int) -> int:
     sign = 0
     if sample < 0:
@@ -31,8 +32,23 @@ def _linear2ulaw(sample: int) -> int:
         sample = _MULAW_CLIP
     sample += _MULAW_BIAS
     exponent = 7
-    for exp_lut in [0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x100,
-                    0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000]:
+    for exp_lut in [
+        0x02,
+        0x04,
+        0x08,
+        0x10,
+        0x20,
+        0x40,
+        0x80,
+        0x100,
+        0x200,
+        0x400,
+        0x800,
+        0x1000,
+        0x2000,
+        0x4000,
+        0x8000,
+    ]:
         if sample <= exp_lut:
             break
         exponent -= 1
@@ -51,14 +67,13 @@ def _ulaw2linear(u_val: int) -> int:
 
 def mulaw_to_pcm16(mulaw_bytes: bytes) -> bytes:
     """Convert mulaw bytes to 16-bit signed PCM bytes."""
-    samples = struct.pack(f"<{len(mulaw_bytes)}h",
-                         *[_ulaw2linear(b) for b in mulaw_bytes])
+    samples = struct.pack(f"<{len(mulaw_bytes)}h", *[_ulaw2linear(b) for b in mulaw_bytes])
     return samples
 
 
 def pcm16_to_mulaw(pcm_bytes: bytes) -> bytes:
     """Convert 16-bit signed PCM bytes to mulaw bytes."""
-    samples = struct.unpack(f"<{len(pcm_bytes)//2}h", pcm_bytes)
+    samples = struct.unpack(f"<{len(pcm_bytes) // 2}h", pcm_bytes)
     return bytes([_linear2ulaw(s) for s in samples])
 
 
@@ -70,8 +85,11 @@ def build_wav(pcm_bytes: bytes, sample_rate: int = 8000, channels: int = 1) -> b
     buf.write(struct.pack("<I", 36 + data_len))
     buf.write(b"WAVE")
     buf.write(b"fmt ")
-    buf.write(struct.pack("<IHHIIHH", 16, 1, channels, sample_rate,
-                          sample_rate * channels * 2, channels * 2, 16))
+    buf.write(
+        struct.pack(
+            "<IHHIIHH", 16, 1, channels, sample_rate, sample_rate * channels * 2, channels * 2, 16
+        )
+    )
     buf.write(b"data")
     buf.write(struct.pack("<I", data_len))
     buf.write(pcm_bytes)
@@ -79,6 +97,7 @@ def build_wav(pcm_bytes: bytes, sample_rate: int = 8000, channels: int = 1) -> b
 
 
 # ── Sarvam STT ────────────────────────────────────────────────────────────────
+
 
 async def transcribe(wav_bytes: bytes) -> Optional[str]:
     """Send WAV audio to Sarvam STT and return transcript."""
@@ -96,6 +115,7 @@ async def transcribe(wav_bytes: bytes) -> Optional[str]:
 
 
 # ── Sarvam TTS ────────────────────────────────────────────────────────────────
+
 
 async def synthesize(text: str) -> Optional[bytes]:
     """Convert text to mulaw 8kHz audio via Sarvam TTS."""
@@ -133,7 +153,7 @@ async def synthesize(text: str) -> Optional[bytes]:
 # Silence threshold: stop buffering after ~800ms of no new audio
 _SILENCE_TIMEOUT = 0.8
 # Minimum audio to attempt STT (avoid transcribing short blips)
-_MIN_AUDIO_BYTES = 3200   # ~200ms at 8kHz mulaw
+_MIN_AUDIO_BYTES = 3200  # ~200ms at 8kHz mulaw
 
 
 async def handle_twilio_stream(websocket: WebSocket):
@@ -172,11 +192,13 @@ async def handle_twilio_stream(websocket: WebSocket):
         mulaw_audio = await synthesize(reply)
         if mulaw_audio and stream_sid:
             payload = base64.b64encode(mulaw_audio).decode()
-            msg = json.dumps({
-                "event": "media",
-                "streamSid": stream_sid,
-                "media": {"payload": payload},
-            })
+            msg = json.dumps(
+                {
+                    "event": "media",
+                    "streamSid": stream_sid,
+                    "media": {"payload": payload},
+                }
+            )
             await websocket.send_text(msg)
 
         processing = False
@@ -185,8 +207,11 @@ async def handle_twilio_stream(websocket: WebSocket):
         nonlocal last_audio_time, processing
         while True:
             await asyncio.sleep(0.1)
-            if (not processing and audio_buffer and
-                    asyncio.get_event_loop().time() - last_audio_time > _SILENCE_TIMEOUT):
+            if (
+                not processing
+                and audio_buffer
+                and asyncio.get_event_loop().time() - last_audio_time > _SILENCE_TIMEOUT
+            ):
                 await process_audio()
 
     watcher_task = asyncio.create_task(silence_watcher())

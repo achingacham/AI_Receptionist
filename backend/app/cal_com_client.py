@@ -21,6 +21,7 @@ def _headers() -> dict:
 def _to_utc_iso(date_str: str, time_str: str) -> str:
     """Combine YYYY-MM-DD and HH:MM in the configured timezone, return UTC ISO string."""
     import zoneinfo
+
     tz = zoneinfo.ZoneInfo(settings.calcom_timezone)
     naive = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
     return naive.replace(tzinfo=tz).astimezone(timezone.utc).isoformat()
@@ -29,6 +30,7 @@ def _to_utc_iso(date_str: str, time_str: str) -> str:
 def get_available_slots(date_str: str, duration_minutes: int = 30) -> list[dict]:
     """Return available slots on a given date (YYYY-MM-DD) from Cal.com."""
     import zoneinfo
+
     tz = zoneinfo.ZoneInfo(settings.calcom_timezone)
     date = datetime.strptime(date_str, "%Y-%m-%d")
     day_start = date.replace(hour=0, minute=0, second=0, tzinfo=tz).astimezone(timezone.utc)
@@ -49,10 +51,12 @@ def get_available_slots(date_str: str, duration_minutes: int = 30) -> list[dict]
     for slot in raw_slots:
         slot_utc = datetime.fromisoformat(slot["time"].replace("Z", "+00:00"))
         slot_local = slot_utc.astimezone(tz)
-        results.append({
-            "start": slot["time"],
-            "display": slot_local.strftime("%I:%M %p"),
-        })
+        results.append(
+            {
+                "start": slot["time"],
+                "display": slot_local.strftime("%I:%M %p"),
+            }
+        )
     return results
 
 
@@ -88,14 +92,15 @@ def book_appointment(
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code if exc.response is not None else "unknown"
         response_text = exc.response.text if exc.response is not None else ""
-        print("[Cal.com] book_appointment failed:", {
-            "request": payload,
-            "status_code": status_code,
-            "response_body": response_text,
-        })
-        raise RuntimeError(
-            f"Cal.com booking failed ({status_code}): {response_text}"
-        ) from exc
+        print(
+            "[Cal.com] book_appointment failed:",
+            {
+                "request": payload,
+                "status_code": status_code,
+                "response_body": response_text,
+            },
+        )
+        raise RuntimeError(f"Cal.com booking failed ({status_code}): {response_text}") from exc
     except Exception as exc:
         print("[Cal.com] book_appointment unexpected error:", str(exc))
         raise
@@ -104,10 +109,13 @@ def book_appointment(
 def find_booking_by_name_and_date(attendee_name: str, date_str: str) -> Optional[dict]:
     """Fetch bookings on a given date and match by attendee name client-side."""
     import zoneinfo
+
     tz = zoneinfo.ZoneInfo(settings.calcom_timezone)
     date = datetime.strptime(date_str, "%Y-%m-%d")
     after = date.replace(hour=0, minute=0, second=0, tzinfo=tz).astimezone(timezone.utc).isoformat()
-    before = date.replace(hour=23, minute=59, second=59, tzinfo=tz).astimezone(timezone.utc).isoformat()
+    before = (
+        date.replace(hour=23, minute=59, second=59, tzinfo=tz).astimezone(timezone.utc).isoformat()
+    )
 
     params = {"afterStart": after, "beforeStart": before, "take": 50}
     resp = httpx.get(f"{_BASE_URL}/bookings", headers=_headers(), params=params, timeout=15)
@@ -121,7 +129,9 @@ def find_booking_by_name_and_date(attendee_name: str, date_str: str) -> Optional
     return None
 
 
-def reschedule_appointment(booking_uid: str, new_date_str: str, new_time_str: str, duration_minutes: int) -> dict:
+def reschedule_appointment(
+    booking_uid: str, new_date_str: str, new_time_str: str, duration_minutes: int
+) -> dict:
     """Move an existing Cal.com booking to a new date/time."""
     payload = {
         "start": _to_utc_iso(new_date_str, new_time_str),
