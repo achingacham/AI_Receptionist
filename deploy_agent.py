@@ -39,7 +39,7 @@ IMAGE_NAME = "ai-receptionist"
 
 # Mapping from .env key → Azure Key Vault secret name
 KEYVAULT_SECRETS_MAP = {
-    "GROQ_API_KEY": "GROQ-API-KEY",
+    "LLM_API_KEY": "LLM-API-KEY",
     "SARVAM_API_KEY": "SARVAM-API-KEY",
     "TWILIO_ACCOUNT_SID": "TWILIO-ACCOUNT-SID",
     "TWILIO_AUTH_TOKEN": "TWILIO-AUTH-TOKEN",
@@ -50,8 +50,8 @@ KEYVAULT_SECRETS_MAP = {
 
 # Non-sensitive config keys passed as direct Container App env vars
 CONTAINER_ENV_KEYS = [
-    "GROQ_MODEL",
-    "GROQ_API_URL",
+    "LLM_MODEL",
+    "LLM_API_URL",
     "BUSINESS_NAME",
     "BUSINESS_HOURS",
     "BUSINESS_PHONE",
@@ -331,7 +331,7 @@ def update_container_app(container_app_name: str, image_tag: str, infra: dict[st
     )
     kv_base = infra["keyvault_uri"].rstrip("/") + "/secrets"
     kv_secrets = [
-        f"groq-api-key=keyvaultref:{kv_base}/GROQ-API-KEY,identityref:{identity_id}",
+        f"llm-api-key=keyvaultref:{kv_base}/LLM-API-KEY,identityref:{identity_id}",
         f"sarvam-api-key=keyvaultref:{kv_base}/SARVAM-API-KEY,identityref:{identity_id}",
         f"twilio-account-sid=keyvaultref:{kv_base}/TWILIO-ACCOUNT-SID,identityref:{identity_id}",
         f"twilio-auth-token=keyvaultref:{kv_base}/TWILIO-AUTH-TOKEN,identityref:{identity_id}",
@@ -358,7 +358,7 @@ def update_container_app(container_app_name: str, image_tag: str, infra: dict[st
     env_vars.append(f"KEYVAULT_URI={infra['keyvault_uri']}")
     # Expose KV-backed secrets as env vars via secretRef.
     env_vars += [
-        "GROQ_API_KEY=secretref:groq-api-key",
+        "LLM_API_KEY=secretref:llm-api-key",
         "SARVAM_API_KEY=secretref:sarvam-api-key",
         "TWILIO_ACCOUNT_SID=secretref:twilio-account-sid",
         "TWILIO_AUTH_TOKEN=secretref:twilio-auth-token",

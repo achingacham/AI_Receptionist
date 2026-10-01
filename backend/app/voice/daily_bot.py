@@ -38,6 +38,7 @@ async def run_daily_bot(room_url: str, token: str):
     @transport.event_handler("on_client_connected")
     async def on_connected(transport, client):
         await task.queue_frames([build_greeting_frame()])
+        print("Daily: queued greeting frame to pipeline for room", room_url)
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

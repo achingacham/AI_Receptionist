@@ -1,9 +1,10 @@
+from .calendar_intent import get_calendar_context
 from .config import settings
-from .groq_client import GroqClient
+from .llm_client import LLMClient
 from .scenarios import SCENARIO_PROMPTS
 
-# Initialize Groq client (requires GROQ_API_KEY in env)
-client = GroqClient(api_key=settings.groq_api_key or "", api_url=settings.groq_api_url, model=settings.groq_model)
+# Initialize LLM client (requires LLM_API_KEY in env)
+client = LLMClient(api_key=settings.llm_api_key or "", api_url=settings.llm_api_url, model=settings.llm_model)
 
 
 def build_system_prompt(scenario: str = "general") -> str:
@@ -19,7 +20,13 @@ def build_system_prompt(scenario: str = "general") -> str:
 
 
 def chat(messages: list[dict], scenario: str = "general") -> str:
-    prompt_parts = ["SYSTEM:\n" + build_system_prompt(scenario), ""]
+    calendar_context = get_calendar_context(messages)
+
+    system_prompt = build_system_prompt(scenario)
+    if calendar_context:
+        system_prompt += f"\n\nCALENDAR SYSTEM UPDATE:\n{calendar_context}\nUse this information to respond to the client naturally."
+
+    prompt_parts = ["SYSTEM:\n" + system_prompt, ""]
     for m in messages:
         role = m.get("role", "user").upper()
         content = m.get("content", "")

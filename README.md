@@ -1,6 +1,6 @@
 # AI Receptionist
 
-An AI-powered receptionist chatbot built with FastAPI and Groq.
+An AI-powered receptionist chatbot built with FastAPI, using any OpenAI-compatible LLM backend (Groq by default; Azure OpenAI also supported).
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ An AI-powered receptionist chatbot built with FastAPI and Groq.
    # or create .env manually
    ```
    Then fill in required values, especially:
-   - `GROQ_API_KEY`
+   - `LLM_API_KEY`
    - `BUSINESS_NAME`
    - `BUSINESS_PHONE`
    - `BUSINESS_EMAIL`
@@ -234,9 +234,9 @@ Edit `.env` to customize the receptionist:
 
 | Variable | Description |
 |---|---|
-| `GROQ_API_KEY` | Your Groq API key |
-| `GROQ_MODEL` | LLM model to use |
-| `GROQ_API_URL` | Groq API base URL |
+| `LLM_API_KEY` | API key for your LLM provider (Groq, Azure OpenAI, etc.) |
+| `LLM_MODEL` | Model or deployment name to use |
+| `LLM_API_URL` | Base URL of the OpenAI-compatible chat completions endpoint |
 | `BUSINESS_NAME` | Name of the business |
 | `BUSINESS_HOURS` | Operating hours |
 | `BUSINESS_PHONE` | Contact phone |

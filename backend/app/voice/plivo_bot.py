@@ -1,4 +1,4 @@
-"""Plivo transport bot using Pipecat + Sarvam STT/TTS + Groq LLM."""
+"""Plivo transport bot using Pipecat + Sarvam STT/TTS + LLM."""
 
 from loguru import logger
 
@@ -38,6 +38,7 @@ async def run_plivo_bot(websocket: WebSocket, stream_id: str):
     async def on_connected(transport, client):
         logger.info(f"Plivo call connected — stream_id={stream_id}")
         await task.queue_frames([build_greeting_frame()])
+        logger.info("Plivo: queued greeting frame to pipeline for stream_id=%s", stream_id)
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

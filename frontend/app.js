@@ -6,6 +6,21 @@ const sendBtn = document.getElementById("send-btn");
 let conversationHistory = [];
 let sessionId = null;
 
+// ── Greeting ────────────────────────────────────────────────────────────────
+async function loadGreeting() {
+  try {
+    const res = await fetch("/health");
+    if (!res.ok) return;
+    const { business, receptionist } = await res.json();
+    document.getElementById("receptionist-name").textContent = receptionist;
+    document.getElementById("greeting-bubble").textContent =
+      `Hi, thanks for reaching out to ${business}! I'm ${receptionist}, how can I help you today?`;
+  } catch {
+    // keep default greeting if the request fails
+  }
+}
+loadGreeting();
+
 // ── Voice call ──────────────────────────────────────────────────────────────
 let callFrame = null;
 let inCall = false;

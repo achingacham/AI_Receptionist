@@ -78,7 +78,7 @@ Replace `<your-app-url>` with your Azure Container App URL (e.g., `https://airec
 1. **Incoming Call** → Exotel sends webhook to `/exotel/incoming`
 2. **TwiML Response** → App returns XML with WebSocket stream URL
 3. **Audio Stream** → Exotel connects to `/exotel/stream` WebSocket
-4. **Pipeline** → Sarvam STT → Groq LLM → Sarvam TTS
+4. **Pipeline** → Sarvam STT → LLM → Sarvam TTS
 5. **Response** → Audio sent back to caller via Exotel
 
 ## Audio Format

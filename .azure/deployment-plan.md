@@ -17,9 +17,9 @@
 ### 2. Requirements
 - **Type**: Production API backend + static frontend (Magnus Hearing and Speech Clinic)
 - **Scale**: Low (<10 concurrent users)
-- **Services**: Voice (Twilio webhooks), Chat (Groq LLM), Appointments (Cal.com integration)
-- **Connectors**: Groq AI, Sarvam AI, Cal.com, Twilio, Google Calendar
-- **Secrets**: API keys (Groq, Sarvam, Cal.com, Twilio, etc.)
+- **Services**: Voice (Twilio webhooks), Chat (LLM), Appointments (Cal.com integration)
+- **Connectors**: LLM provider (Groq/Azure OpenAI), Sarvam AI, Cal.com, Twilio, Google Calendar
+- **Secrets**: API keys (LLM, Sarvam, Cal.com, Twilio, etc.)
 - **Database**: PostgreSQL for appointment history
 - **Monitoring**: Application Insights enabled
 - **Timezone**: Asia/Kolkata (India)
@@ -281,7 +281,7 @@
 ### Warnings and Recommendations
 
 ⚠️ **SECURITY WARNING**: `.env` file contains live API credentials
-- **Issue**: Groq, Sarvam, Twilio, Cal.com API keys in plain text
+- **Issue**: LLM, Sarvam, Twilio, Cal.com API keys in plain text
 - **Action Required**: Immediately move all credentials to Azure Key Vault
 - **Impact**: HIGH - Risk of credential exposure
 - **Mitigation**: 
@@ -312,7 +312,7 @@ Before proceeding to deployment:
 1. **CRITICAL - Secure Credentials**:
    ```powershell
    # Move API keys to Azure Key Vault
-   az keyvault secret set --vault-name <keyvault-name> --name GROQ_API_KEY --value <key>
+   az keyvault secret set --vault-name <keyvault-name> --name LLM_API_KEY --value <key>
    az keyvault secret set --vault-name <keyvault-name> --name SARVAM_API_KEY --value <key>
    # ... (repeat for all credentials)
    ```

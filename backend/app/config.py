@@ -2,9 +2,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    groq_api_key: str | None = None
-    groq_model: str = "groq-small"
-    groq_api_url: str = "https://api.groq.com/v1"
+    llm_api_key: str | None = None
+    llm_model: str = "groq-small"
+    llm_api_url: str = "https://api.groq.com/v1"
     business_name: str = "Our Business"
     business_hours: str = "Monday-Friday 9am-5pm"
     business_phone: str = ""
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Voice (Sarvam AI + Plivo/Twilio/Exotel)
     sarvam_api_key: str = ""
+    sarvam_tts_voice: str = "abhilash"  # male voice; see SarvamTTSSpeakerV2/V3
     voice_provider: str = "plivo"   # "plivo", "twilio", or "exotel"
     plivo_auth_id: str = ""
     plivo_auth_token: str = ""

@@ -1,4 +1,4 @@
-"""Twilio transport bot using Pipecat + Sarvam STT/TTS + Groq LLM."""
+"""Twilio transport bot using Pipecat + Sarvam STT/TTS + LLM."""
 
 from loguru import logger
 
@@ -44,6 +44,7 @@ async def run_twilio_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     async def on_connected(transport, client):
         logger.info(f"Twilio call connected — stream_sid={stream_sid}")
         await task.queue_frames([build_greeting_frame()])
+        logger.info("Twilio: queued greeting frame to pipeline for stream_sid=%s", stream_sid)
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

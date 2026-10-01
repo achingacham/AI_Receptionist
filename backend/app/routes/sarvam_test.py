@@ -1,4 +1,4 @@
-"""Direct Sarvam STT → Groq LLM → Sarvam TTS endpoint for browser-based testing.
+"""Direct Sarvam STT → LLM → Sarvam TTS endpoint for browser-based testing.
 
 No Twilio or telephony required. The browser records WAV audio, POSTs it here,
 and gets back a JSON payload with the transcript, LLM reply, and base64 audio.
@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 import httpx
 
 from ..config import settings
-from ..receptionist import build_system_prompt
+from ..receptionist import build_system_prompt, client as llm_client
 
 router = APIRouter(prefix="/sarvam", tags=["sarvam-test"])
 
@@ -44,27 +44,17 @@ async def voice_chat(audio: UploadFile = File(...)):
         if not transcript:
             raise HTTPException(status_code=400, detail="Could not transcribe audio — is the microphone working?")
 
-        # ── 2. Groq LLM ──────────────────────────────────────────────────────
+        # ── 2. LLM ───────────────────────────────────────────────────────────
         system_prompt = build_system_prompt("appointment") + _VOICE_SYSTEM_SUFFIX
-        llm_resp = await client.post(
-            f"{settings.groq_api_url}/chat/completions",
-            headers={"Authorization": f"Bearer {settings.groq_api_key}"},
-            json={
-                "model": settings.groq_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": transcript},
-                ],
-                "max_tokens": 150,
-                "temperature": 0.7,
-            },
-        )
-        if llm_resp.status_code != 200:
+        try:
+            reply = llm_client.generate(
+                f"SYSTEM: {system_prompt}\nUSER: {transcript}", max_tokens=150
+            ).strip()
+        except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=502,
-                detail=f"Groq LLM error {llm_resp.status_code}: {llm_resp.text}",
+                detail=f"LLM error {e.response.status_code}: {e.response.text}",
             )
-        reply = llm_resp.json()["choices"][0]["message"]["content"].strip()
 
         # ── 3. Sarvam TTS ────────────────────────────────────────────────────
         tts_resp = await client.post(

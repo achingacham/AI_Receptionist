@@ -1,23 +1,55 @@
-"""Shared Pipecat pipeline: Sarvam STT → Groq LLM → Sarvam TTS.
+"""Shared Pipecat pipeline: Sarvam STT → LLM → Sarvam TTS.
 
 Transport-agnostic. Telephony bots (Plivo/Twilio/Exotel) use 8kHz mu-law;
 browser (Daily.co) uses 16kHz PCM — pass sample_rate and input_audio_codec accordingly.
 """
 
+import asyncio
+
 from pipecat.pipeline.pipeline import Pipeline
-from pipecat.frames.frames import TextFrame
+from pipecat.frames.frames import Frame, LLMContextFrame, TextFrame
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_response_universal import (
     LLMContext,
     LLMContextAggregatorPair,
     LLMRunFrame,
 )
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.services.sarvam.stt import SarvamSTTService
 from pipecat.services.sarvam.tts import SarvamTTSService
 
+from ..calendar_intent import get_calendar_context
 from ..config import settings
 from ..receptionist import build_system_prompt
+
+
+class CalendarIntentProcessor(FrameProcessor):
+    """Runs the same Cal.com intent-extraction used by text chat before each LLM
+    turn, so voice calls get live calendar access instead of the LLM guessing at
+    availability or hallucinating a booking confirmation.
+    """
+
+    def __init__(self, base_system_prompt: str):
+        super().__init__()
+        self._base_system_prompt = base_system_prompt
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, LLMContextFrame) and direction == FrameDirection.DOWNSTREAM:
+            messages = [m for m in frame.context.messages if m.get("role") != "system"]
+            system_prompt = self._base_system_prompt
+            if messages:
+                calendar_context = await asyncio.to_thread(get_calendar_context, messages)
+                if calendar_context:
+                    system_prompt += (
+                        f"\n\nCALENDAR SYSTEM UPDATE:\n{calendar_context}\n"
+                        "Use this information to respond to the client naturally."
+                    )
+            frame.context.set_messages([{"role": "system", "content": system_prompt}, *messages])
+
+        await self.push_frame(frame, direction)
 
 
 def build_pipeline(
@@ -43,13 +75,14 @@ def build_pipeline(
     )
 
     llm = OpenAILLMService(
-        api_key=settings.groq_api_key or "",
-        model=settings.groq_model,
-        base_url=settings.groq_api_url,
+        api_key=settings.llm_api_key or "",
+        model=settings.llm_model,
+        base_url=settings.llm_api_url,
     )
 
     tts = SarvamTTSService(
         api_key=settings.sarvam_api_key,
+        voice_id=settings.sarvam_tts_voice,
         sample_rate=sample_rate,
     )
 
@@ -61,11 +94,13 @@ def build_pipeline(
 
     context = LLMContext(messages=[{"role": "system", "content": system_prompt}])
     context_aggregator = LLMContextAggregatorPair(context)
+    calendar_intent = CalendarIntentProcessor(system_prompt)
 
     pipeline = Pipeline([
         transport.input(),
         stt,
         context_aggregator.user(),
+        calendar_intent,
         llm,
         tts,
         transport.output(),
@@ -84,9 +119,6 @@ def build_greeting_frame() -> TextFrame:
     """Build the voice greeting text frame for connected calls."""
     greeting = (
         f"Hello, this is {settings.receptionist_name} from {settings.business_name}. "
-        "I can help with booking appointments, rescheduling, cancellations, or general questions. "
-        "Please speak slowly and clearly so I can understand you. "
-        "If you'd like to book an appointment, please tell me the preferred date and time. "
-        "I'll confirm and send details to your phone or email."
+        "How can I help you today?"
     )
     return TextFrame(text=greeting)

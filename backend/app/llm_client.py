@@ -2,11 +2,11 @@ import httpx
 from typing import Optional
 
 
-class GroqClient:
-    """Groq client wrapper using httpx with OpenAI-compatible API format.
+class LLMClient:
+    """httpx wrapper for any OpenAI-compatible chat completions endpoint.
 
-    This adapter calls Groq's chat completion endpoint which is compatible with
-    OpenAI's API format.
+    Works with Groq, Azure OpenAI's unified /openai/v1 surface, or any other
+    provider that implements the OpenAI chat completions API format.
     """
 
     def __init__(self, api_key: str, api_url: str = "https://api.groq.com/openai/v1", model: str = "mixtral-8x7b-32768"):
@@ -14,9 +14,14 @@ class GroqClient:
         self.api_url = api_url.rstrip("/")
         self.model = model
         self._client = httpx.Client(timeout=30.0)
+        # GPT-5/reasoning-tier models reject "max_tokens" (want "max_completion_tokens")
+        # and reject a non-default "temperature". Detected lazily on first request and
+        # cached on the instance so later calls skip straight to the working payload.
+        self._token_param = "max_tokens"
+        self._send_temperature = True
 
     def generate(self, prompt: str, max_tokens: int = 1024) -> str:
-        """Generate a response using the Groq API with chat completions."""
+        """Generate a response using the chat completions endpoint."""
         url = f"{self.api_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -56,14 +61,33 @@ class GroqClient:
         if current_content:
             messages.append({"role": current_role, "content": '\n'.join(current_content).strip()})
         
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "temperature": 0.7
-        }
-        
-        resp = self._client.post(url, json=payload, headers=headers)
+        def build_payload() -> dict:
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                self._token_param: max_tokens,
+            }
+            if self._send_temperature:
+                payload["temperature"] = 0.7
+            return payload
+
+        resp = self._client.post(url, json=build_payload(), headers=headers)
+        # Retry once per known incompatibility (GPT-5/reasoning-tier models reject
+        # "max_tokens" and non-default "temperature"); cache the fix on the instance.
+        for _ in range(2):
+            if resp.status_code != 400:
+                break
+            try:
+                param = resp.json().get("error", {}).get("param")
+            except ValueError:
+                break
+            if param == "max_tokens" and self._token_param == "max_tokens":
+                self._token_param = "max_completion_tokens"
+            elif param == "temperature" and self._send_temperature:
+                self._send_temperature = False
+            else:
+                break
+            resp = self._client.post(url, json=build_payload(), headers=headers)
         resp.raise_for_status()
         data = resp.json()
 

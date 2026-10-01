@@ -1,4 +1,4 @@
-"""Exotel transport bot using Pipecat + Sarvam STT/TTS + Groq LLM."""
+"""Exotel transport bot using Pipecat + Sarvam STT/TTS + LLM."""
 
 from loguru import logger
 
@@ -54,6 +54,7 @@ async def run_exotel_bot(websocket: WebSocket, stream_sid: str, call_sid: str = 
     async def on_connected(transport, client):
         logger.info(f"Exotel call connected — stream_sid={stream_sid}")
         await task.queue_frames([build_greeting_frame()])
+        logger.info("Exotel: queued greeting frame to pipeline for stream_sid=%s", stream_sid)
 
     @transport.event_handler("on_client_disconnected")
     async def on_disconnected(transport, client):

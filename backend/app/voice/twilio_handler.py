@@ -1,7 +1,7 @@
 """Twilio Media Streams WebSocket handler.
 
 Flow per call:
-  Twilio → WebSocket (mulaw 8kHz) → STT (Sarvam) → LLM (Groq) → TTS (Sarvam) → WebSocket → Twilio
+  Twilio → WebSocket (mulaw 8kHz) → STT (Sarvam) → LLM → TTS (Sarvam) → WebSocket → Twilio
 """
 
 import asyncio

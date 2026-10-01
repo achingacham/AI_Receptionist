@@ -1,4 +1,4 @@
-"""Pipecat voice bot: Plivo WebSocket transport + Sarvam STT/TTS + Groq LLM."""
+"""Pipecat voice bot: Plivo WebSocket transport + Sarvam STT/TTS + LLM."""
 
 from loguru import logger
 
@@ -48,9 +48,9 @@ async def run_bot(websocket: WebSocket, stream_id: str):
     )
 
     llm = OpenAILLMService(
-        api_key=settings.groq_api_key or "",
-        model=settings.groq_model,
-        base_url=settings.groq_api_url,
+        api_key=settings.llm_api_key or "",
+        model=settings.llm_model,
+        base_url=settings.llm_api_url,
     )
 
     tts = SarvamTTSService(

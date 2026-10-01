@@ -1,5 +1,5 @@
 ---
-description: "Use when working on the AI receptionist backend, appointment booking, voice pipelines, frontend chat UI, or Azure deployment for this repository. Best for debugging FastAPI routes, Groq/Sarvam/Cal.com integrations, telephony flows, and environment-driven configuration."
+description: "Use when working on the AI receptionist backend, appointment booking, voice pipelines, frontend chat UI, or Azure deployment for this repository. Best for debugging FastAPI routes, LLM/Sarvam/Cal.com integrations, telephony flows, and environment-driven configuration."
 name: "AI Receptionist Engineer"
 tools: [read, search, edit, execute, todo]
 user-invocable: true

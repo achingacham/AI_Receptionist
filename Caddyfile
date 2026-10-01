@@ -16,3 +16,18 @@
 		}
 	}
 }
+
+livekit.aevum-intel.com {
+        handle_path /livekit/jwt/* {
+                reverse_proxy 127.0.0.1:8080
+        }
+
+        @legacy_jwt path /sfu/get* /get_token* /healthz* /delegate_delayed_leave* /sfu_webhook*
+        handle @legacy_jwt {
+                reverse_proxy 127.0.0.1:8080
+        }
+
+        handle {
+                reverse_proxy 127.0.0.1:7880
+        }
+}
