@@ -11,3 +11,7 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: live integration tests requiring network and credentials",
+]

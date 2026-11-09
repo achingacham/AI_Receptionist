@@ -24,3 +24,16 @@ _Avoid_: Access control, permissions
 The automated redaction of personally identifiable and protected health information prior to persisting data in logs or storage.
 _Avoid_: Anonymization, hashing
 
+**Hermetic Test**:
+A test executed in complete isolation from external networks, live credentials, and third-party infrastructure, asserting behavior strictly against controlled local contracts.
+_Avoid_: Unit test, offline test
+
+**Live Preflight**:
+A non-blocking or fail-fast readiness probe executed during server initialization to verify upstream provider connectivity and model deployment validity before accepting client traffic.
+_Avoid_: Sanity check, ping
+
+**Upstream Fault**:
+An execution failure originating within an external dependency (such as an LLM provider, STT service, or calendar API) rather than the application codebase itself, requiring distinct error classification.
+_Avoid_: Internal server error, system bug
+
+

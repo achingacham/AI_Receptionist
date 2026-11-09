@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     business_email: str = ""
     business_address: str = ""
     receptionist_name: str = "Alex"
+    domain: str = "aireceptionist.aevum-intel.com"
 
     # Cal.com
     calcom_api_key: str = ""
