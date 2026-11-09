@@ -1,0 +1,15 @@
+| Priority | Task (one-line definition) | Status |
+| :--- | :--- | :--- |
+| P0 | Configure inbound telephony routing and conditional call forwarding | Completed |
+| P0 | Deploy low-latency real-time voice streaming pipeline with VAD and barge-in | Completed |
+| P0 | Integrate business identity, operating hours, and FAQ conversational engine | In Progress |
+| P0 | Connect calendar availability and automated appointment scheduling APIs | Completed |
+| P1 | Implement real-time PII masking and sensitive data redaction on transcripts | Planned |
+| P1 | Enforce verbal prompt injection defenses and streaming output safety guardrails | Planned |
+| P1 | Build live human call escalation and automated post-call staff notifications | In Progress |
+| P1 | Establish caller verification and SMS OTP authorization for appointment changes | Planned |
+| P1 | Configure maximum call duration limits, silence timeouts, and abuse rate limiting | Planned |
+| P2 | Implement voice turnaround latency and acoustic benchmark tracking | In Progress |
+| P2 | Build pre-deployment synthetic caller simulation and regression test suites | Planned |
+| P2 | Deploy automated production LLM-as-a-Judge transcript evaluation pipeline | Planned |
+| P2 | Launch business impact analytics for containment, escalation, and conversion rates | Planned |

@@ -1,0 +1,36 @@
+Expanding into a more granular architecture, here are the **5 basic components** of a voice-based AI receptionist for a small business:
+
+```mermaid
+flowchart TD
+    Customer([Customer Call]) --> C1["1. Telephony & Call Routing<br/>(Virtual Numbers / Forwarding)"]
+    C1 <--> C2["2. Real-Time Speech Pipeline<br/>(VAD / STT / TTS / Barge-in)"]
+    C2 <--> C3["3. Business Knowledge & Reasoning Engine<br/>(LLM / FAQs / Hours / Policies)"]
+    C3 <--> C4["4. Action & Calendar Integrations<br/>(Booking / Availability / CRM Sync)"]
+    C3 --> C5["5. Human Escalation & Staff Alerts<br/>(Live Call Transfer / SMS Summaries)"]
+    C4 <--> Cal[(Cal.com / Google Calendar)]
+    C5 --> Staff([Front Desk / Owner Mobile])
+```
+
+---
+
+### 1. Telephony & Inbound Call Routing
+* **What it does**: Connects to the business's phone number using providers like Twilio, Plivo, or Exotel.
+* **Small Business Role**: Supports **conditional call forwarding**—letting staff answer first, and only routing to the AI when the line is busy, unanswered after 3 rings, or after business hours.
+
+### 2. Real-Time Speech Pipeline (VAD, STT & TTS)
+* **What it does**: Converts spoken audio into text (STT) and synthesizes the response back into audio (TTS) in under 1 second.
+* **Small Business Role**: Includes **Voice Activity Detection (VAD)** and **barge-in handling**, allowing customers to interrupt or speak naturally without the AI talking over them or cutting them off.
+
+### 3. Business Knowledge & Dialog Engine (The Brain)
+* **What it does**: An LLM configured with the specific business context, policies, and tone.
+* **Small Business Role**: Answers common questions accurately (*business hours, services offered, parking, pricing, accepted insurance*) and maintains a polite, professional persona while refusing to answer out-of-scope questions.
+
+### 4. Action & Scheduling Integrations (The Hands)
+* **What it does**: Connects the agent directly to operational tools via APIs.
+* **Small Business Role**: Checks real-time slot availability, books or reschedules appointments (e.g., via Cal.com or Google Calendar), and immediately sends the caller an SMS confirmation link.
+
+### 5. Human Escalation & Staff Notifications (The Safety Net)
+* **What it does**: Manages handoffs and keeps the business owner in the loop.
+* **Small Business Role**:
+  * **Live Transfer**: Instantly transfers the call to the owner’s mobile or front desk if the caller is angry, has an emergency, or asks for a human.
+  * **Post-Call Alerts**: Automatically texts or emails the owner a 2-sentence summary and transcript right after every call (*"Caller: Jane Doe. Reason: Rescheduled cleaning to Thursday 3 PM. Handled by AI."*).

@@ -1,0 +1,72 @@
+Evaluating a voice-based conversational agent—especially one deployed as a service for businesses—requires assessing three distinct dimensions: **Acoustic & System Latency**, **Conversational Quality & Safety**, and **Business Outcomes**.
+
+```mermaid
+flowchart TD
+    Eval[Conversational Agent Evaluation] --> Acoustic[1. Acoustic & Latency Metrics<br/>Voice Pipeline Performance]
+    Eval --> Dialog[2. Conversational Quality<br/>NLU, Reasoning & Accuracy]
+    Eval --> Business[3. Business & Operational Impact<br/>ROI, Containment & Outcomes]
+    
+    Acoustic --> M1["Turn Latency / TTFA<br/>WER (Word Error Rate)<br/>False Interruptions"]
+    Dialog --> M2["Goal Completion Rate<br/>Hallucination Rate<br/>Tool-Calling Accuracy"]
+    Business --> M3["Containment Rate<br/>Escalation Rate<br/>Caller Sentiment / CSAT"]
+```
+
+---
+
+### 1. Voice Pipeline & Latency Metrics (Technical Health)
+
+In voice agents, responsiveness and acoustic clarity dictate whether a conversation feels natural or frustrating.
+
+| Metric | Target | What It Measures |
+| :--- | :--- | :--- |
+| **Turn Turnaround Latency (TTFA)** | `< 800ms – 1.2s` | Time from when the caller stops speaking to when the first synthesized audio byte plays. |
+| **STT Word Error Rate (WER)** | `< 8%` | Accuracy of transcription, especially for noisy environments and varying accents. |
+| **Entity Extraction Error Rate** | `< 2%` | Errors in capturing critical alphanumeric data: phone numbers, email addresses, dates, and names. |
+| **False Interruption Rate** | Near zero | Instances where background noise or natural pauses trigger the agent to cut the user off or stop speaking prematurely. |
+
+---
+
+### 2. Conversational Quality & Accuracy (Dialog & LLM)
+
+These metrics evaluate whether the agent understands instructions, stays grounded, and takes correct actions.
+
+* **Task / Goal Completion Rate**:
+  * Did the interaction achieve its objective (e.g., successfully booking a slot in Cal.com, taking a message, or answering a pricing FAQ)?
+* **Hallucination & Policy Adherence Rate**:
+  * Does the agent stick strictly to the business's provided knowledge base?
+  * *Failure cases*: Quoting non-existent services, inventing discounts, or promising slots outside working hours.
+* **Tool / API Calling Accuracy**:
+  * Precision of extracted parameters passed to backend APIs (e.g., date formats, timezone conversions, customer phone normalization).
+* **Turn Efficiency**:
+  * Number of conversational turns required to complete a task. Fewer turns generally mean a more natural, decisive agent.
+* **Tone & Persona Consistency**:
+  * Maintaining brand voice (e.g., professional, empathetic) even when callers are frustrated or speaking incoherently.
+
+---
+
+### 3. Business & Operational Metrics (SMB Value)
+
+Small business owners judge conversational agents on offloaded workload and business ROI, not model benchmarks:
+
+* **Containment Rate**: The percentage of interactions resolved completely by the agent without needing human intervention.
+* **Escalation / Fallback Rate**: Frequency with which calls are routed to front desk staff or sent to voicemail because the agent could not resolve the inquiry.
+* **Booking / Lead Conversion Rate**: Ratio of callers who successfully booked an appointment or converted to a lead compared to historical human receptionist rates.
+* **Caller Sentiment & CSAT**: Automated sentiment analysis (positive/neutral/negative) derived from post-call transcript analysis, or 1–5 star post-call SMS ratings.
+* **Cost Per Call**: Total infrastructure cost (telephony minutes + STT + LLM tokens + TTS) versus the cost of human answering services.
+
+---
+
+### 4. How Evaluation Is Implemented in Practice
+
+Modern voice agent evaluation is split between **pre-deployment testing** and **continuous production observability**:
+
+#### A. Pre-Deployment (Automated Simulation & Regression Testing)
+* **Synthetic Caller Personas**: Running an LLM configured as a caller (e.g., *“Angry customer wanting a refund”* or *“Indecisive caller changing appointment times twice”*) to test the agent across edge cases.
+* **Golden Test Datasets**: A fixed bank of audio recordings and test dialogues run against CI/CD pipelines to ensure prompt changes or model updates don't cause regressions.
+
+#### B. Production Monitoring (LLM-as-a-Judge & Observability)
+* **LLM-as-a-Judge**: An offline evaluation job (using tools like Langfuse, LangSmith, or custom scripts) parses production call transcripts nightly to score:
+  * Was the caller satisfied?
+  * Did the agent follow policy?
+  * Was an escalation justified or caused by agent failure?
+* **Human-in-the-Loop Spot Audits**: Sampling flagged interactions (e.g., calls lasting under 20 seconds, dropped calls, or negative sentiment) for manual review and prompt refinement.
