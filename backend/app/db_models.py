@@ -40,3 +40,18 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     call: Mapped["Call"] = relationship(back_populates="messages")
+
+
+class CallerMessage(Base):
+    """A structured inquiry record captured when an inquiry falls outside the Knowledge Base."""
+
+    __tablename__ = "caller_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    caller_name: Mapped[str] = mapped_column(String(100))
+    caller_phone: Mapped[str] = mapped_column(String(50))
+    inquiry_text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending"
+    )  # pending, resolved, archived
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)

@@ -11,6 +11,7 @@ from datetime import date
 
 from .config import settings
 from .llm_client import LLMClient
+from .messages import record_caller_message
 from . import cal_com_client as cal
 
 client = LLMClient(
@@ -25,13 +26,15 @@ Given the conversation below, extract the user's appointment intent as JSON.
 
 Return ONLY valid JSON — no explanation, no markdown. Use this schema:
 {
-  "action": "book" | "reschedule" | "cancel" | "check_availability" | "none",
+  "action": "book" | "reschedule" | "cancel" | "check_availability" | "leave_message" | "none",
   "appointment_type": string | null,
   "date": "YYYY-MM-DD" | null,
   "time": "HH:MM" | null,
   "duration_minutes": integer | null,
   "attendee_name": string | null,
   "attendee_email": string | null,
+  "attendee_phone": string | null,
+  "inquiry_text": string | null,
   "existing_date": "YYYY-MM-DD" | null,
   "event_id": string | null
 }
@@ -172,5 +175,26 @@ def get_calendar_context(messages: list[dict]) -> str:
                 calendar_context = f"[Calendar] Cancellation failed: {e}"
         else:
             calendar_context = "[Calendar] Could not find the appointment to cancel."
+
+    elif action == "leave_message":
+        name = intent.get("attendee_name")
+        phone = intent.get("attendee_phone") or intent.get("attendee_email")
+        inquiry = intent.get("inquiry_text")
+        if name and phone and inquiry:
+            record_caller_message(caller_name=name, caller_phone=phone, inquiry_text=inquiry)
+            calendar_context = (
+                f"[Message System] Caller message recorded successfully for {name} ({phone}). "
+                "Confirm to the caller that their message has been logged for clinic staff follow-up."
+            )
+        else:
+            missing = [
+                f
+                for f, v in [("name", name), ("phone/contact", phone), ("inquiry", inquiry)]
+                if not v
+            ]
+            calendar_context = (
+                f"[Message System] Caller wishes to leave a message. "
+                f"Please ask for missing details: {', '.join(missing)}."
+            )
 
     return calendar_context

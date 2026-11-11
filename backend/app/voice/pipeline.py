@@ -21,6 +21,7 @@ from pipecat.services.sarvam.tts import SarvamTTSService
 from ..calendar_intent import get_calendar_context
 from ..config import settings
 from ..receptionist import build_system_prompt
+from ..safety import check_safety_circuit_breaker
 
 
 class CalendarIntentProcessor(FrameProcessor):
@@ -40,10 +41,24 @@ class CalendarIntentProcessor(FrameProcessor):
             messages = [m for m in frame.context.messages if m.get("role") != "system"]
             system_prompt = self._base_system_prompt
             if messages:
+                # Fast check for Safety Perimeter Medical Circuit Breaker
+                last_user_msg = messages[-1].get("content", "")
+                circuit_breaker_override = check_safety_circuit_breaker(last_user_msg)
+                if circuit_breaker_override:
+                    system_prompt = (
+                        "EMERGENCY PROTOCOL: You must immediately respond with this exact notice "
+                        f"and nothing else: {circuit_breaker_override}"
+                    )
+                    frame.context.set_messages(
+                        [{"role": "system", "content": system_prompt}, *messages]
+                    )
+                    await self.push_frame(frame, direction)
+                    return
+
                 calendar_context = await asyncio.to_thread(get_calendar_context, messages)
                 if calendar_context:
                     system_prompt += (
-                        f"\n\nCALENDAR SYSTEM UPDATE:\n{calendar_context}\n"
+                        f"\n\nCALENDAR / MESSAGE SYSTEM UPDATE:\n{calendar_context}\n"
                         "Use this information to respond to the client naturally."
                     )
             frame.context.set_messages([{"role": "system", "content": system_prompt}, *messages])

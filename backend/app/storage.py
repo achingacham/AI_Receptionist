@@ -8,7 +8,7 @@ async route handlers/event handlers so the event loop isn't blocked.
 from datetime import datetime, timezone
 
 from .db import SessionLocal
-from .db_models import Call, Message
+from .db_models import Call, CallerMessage, Message
 
 
 def get_or_create_call(channel: str, external_id: str) -> int:
@@ -73,3 +73,38 @@ def log_transcript(call_id: int, messages: list[dict]) -> None:
                 Message(call_id=call_id, role=role, content=_flatten_content(m.get("content")))
             )
         session.commit()
+
+
+def save_caller_message(caller_name: str, caller_phone: str, inquiry_text: str) -> int:
+    """Save a caller inquiry message when the inquiry cannot be answered by the KB."""
+    with SessionLocal() as session:
+        msg = CallerMessage(
+            caller_name=caller_name,
+            caller_phone=caller_phone,
+            inquiry_text=inquiry_text,
+            status="pending",
+        )
+        session.add(msg)
+        session.commit()
+        session.refresh(msg)
+        return msg.id
+
+
+def list_caller_messages(status: str | None = None) -> list[dict]:
+    """Retrieve saved caller messages."""
+    with SessionLocal() as session:
+        query = session.query(CallerMessage)
+        if status:
+            query = query.filter_by(status=status)
+        messages = query.order_by(CallerMessage.created_at.desc()).all()
+        return [
+            {
+                "id": m.id,
+                "caller_name": m.caller_name,
+                "caller_phone": m.caller_phone,
+                "inquiry_text": m.inquiry_text,
+                "status": m.status,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ]

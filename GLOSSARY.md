@@ -36,4 +36,20 @@ _Avoid_: Sanity check, ping
 An execution failure originating within an external dependency (such as an LLM provider, STT service, or calendar API) rather than the application codebase itself, requiring distinct error classification.
 _Avoid_: Internal server error, system bug
 
+**Clinic Knowledge Base**:
+The curated repository of administrative facts, clinical service catalogs, fee schedules, and operational policies used to ground receptionist responses.
+_Avoid_: FAQ file, prompt docs, RAG corpus
+
+**Grounding Guardrail**:
+A constraint mechanism preventing the conversational engine from asserting policies, prices, or clinical facts not explicitly present within the Clinic Knowledge Base.
+_Avoid_: Hallucination guardrail, fact checker
+
+**Caller Message**:
+A structured record captured by the receptionist when a client inquiry falls outside the Clinic Knowledge Base or requires staff escalation, persisted for staff follow-up.
+_Avoid_: Voicemail, ticket, lead
+
+**Clinic Schedule**:
+The structured definition of clinic operating hours, holidays, and timezones used to deterministically evaluate real-time open or closed status.
+_Avoid_: Timetable, office hours
+
 
